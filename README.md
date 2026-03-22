@@ -1,33 +1,33 @@
 # Smart Auto Suggest Box
 
-A highly customizable auto-suggest (autocomplete) text field widget for Flutter with **smart dropdown positioning** and a **flexible data source** API.
+A highly customizable auto-suggest (autocomplete) Flutter package offering two widgets:
+
+- **`SmartAutoSuggestBox`** — floating overlay dropdown
+- **`SmartAutoSuggestView`** — inline suggestion list embedded in the widget tree
+
+Both share the same `SmartAutoSuggestDataSource` API and item model.
 
 [![pub package](https://img.shields.io/pub/v/smart_auto_suggest_box.svg)](https://pub.dev/packages/smart_auto_suggest_box)
 
 ## Features
 
-- **Data Source API** - Unified `SmartAutoSuggestBoxDataSource` for sync initial data and async search
-- **Smart Positioning** - Dropdown automatically repositions when there's not enough space
-- **4-Direction Support** - Show suggestions in any direction: `top`, `bottom`, `start`, `end`
-- **Auto-Fallback** - Falls back to the opposite direction if insufficient space
-- **Search Modes** - `onNoLocalResults` (default) or `always` for every keystroke
-- **Configurable Debounce** - Control search trigger timing
-- **RTL Support** - `start`/`end` directions respect text directionality
-- **Keyboard Navigation** - Arrow keys, Enter to select, Escape to dismiss
-- **Form Support** - Built-in form validation via `SmartAutoSuggestBox.form()`
-- **Custom Builders** - Customize item rendering, no-results view, and loading state
-- **Internationalization** - Built-in i18n support
+- **Two display modes** — floating overlay (`SmartAutoSuggestBox`) or inline list (`SmartAutoSuggestView`)
+- **Unified data source** — `SmartAutoSuggestDataSource` with sync `initialList` and async `onSearch`
+- **Smart overlay positioning** — auto-repositions to the opposite side if insufficient space (`SmartAutoSuggestBox` only)
+- **4-direction support** — `top`, `bottom`, `start`, `end` with RTL awareness
+- **Search modes** — `onNoLocalResults` (default) or `always` (every keystroke)
+- **Configurable debounce** — control search trigger timing
+- **Keyboard navigation** — ↑ ↓ Enter Escape
+- **Form support** — `SmartAutoSuggestBox.form()` and `SmartAutoSuggestView.form()` with validation
+- **Custom builders** — item, no-results, loading state
+- **Internationalization** — built-in i18n
 
 ## Getting Started
 
-Add the dependency to your `pubspec.yaml`:
-
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.1.0
+  smart_auto_suggest_box: ^0.2.0
 ```
-
-Then run:
 
 ```bash
 flutter pub get
@@ -35,39 +35,54 @@ flutter pub get
 
 ## Usage
 
-### Basic Usage with Data Source
+### SmartAutoSuggestBox (floating overlay)
 
 ```dart
 SmartAutoSuggestBox<String>(
-  dataSource: SmartAutoSuggestBoxDataSource(
+  dataSource: SmartAutoSuggestDataSource(
     initialList: (context) => [
-      SmartAutoSuggestBoxItem(value: 'apple', label: 'Apple'),
-      SmartAutoSuggestBoxItem(value: 'banana', label: 'Banana'),
-      SmartAutoSuggestBoxItem(value: 'cherry', label: 'Cherry'),
+      SmartAutoSuggestItem(value: 'apple', label: 'Apple'),
+      SmartAutoSuggestItem(value: 'banana', label: 'Banana'),
     ],
   ),
   decoration: const InputDecoration(
     labelText: 'Search fruits',
     border: OutlineInputBorder(),
   ),
-  onSelected: (item) {
-    print('Selected: ${item?.label}');
-  },
+  onSelected: (item) => print(item?.label),
+);
+```
+
+### SmartAutoSuggestView (inline list)
+
+```dart
+SmartAutoSuggestView<String>(
+  dataSource: SmartAutoSuggestDataSource(
+    initialList: (context) => [
+      SmartAutoSuggestItem(value: 'apple', label: 'Apple'),
+      SmartAutoSuggestItem(value: 'banana', label: 'Banana'),
+    ],
+  ),
+  showListWhenEmpty: true,   // show list even when text field is empty
+  listMaxHeight: 300,
+  decoration: const InputDecoration(
+    labelText: 'Search',
+    border: OutlineInputBorder(),
+  ),
+  onSelected: (item) => print(item?.label),
 );
 ```
 
 ### Async Server Search
 
-Use `onSearch` to fetch results from a server when local filtering yields no results:
-
 ```dart
-SmartAutoSuggestBox<String>(
-  dataSource: SmartAutoSuggestBoxDataSource(
-    initialList: (context) => [], // Start with empty list
+SmartAutoSuggestBox<String>(   // or SmartAutoSuggestView
+  dataSource: SmartAutoSuggestDataSource(
+    initialList: (context) => [],
     onSearch: (context, currentItems, searchText) async {
       final results = await api.search(searchText);
       return results.map((r) =>
-        SmartAutoSuggestBoxItem(value: r.id, label: r.name),
+        SmartAutoSuggestItem(value: r.id, label: r.name),
       ).toList();
     },
     debounce: const Duration(milliseconds: 500),
@@ -76,54 +91,48 @@ SmartAutoSuggestBox<String>(
 );
 ```
 
-### Always Search Mode
+### searchMode.always
 
-Call `onSearch` on every text change (after debounce), regardless of local results:
+Call `onSearch` on every keystroke (after debounce):
 
 ```dart
 SmartAutoSuggestBox<String>(
-  dataSource: SmartAutoSuggestBoxDataSource(
+  dataSource: SmartAutoSuggestDataSource(
     initialList: (context) => localItems,
-    onSearch: (context, currentItems, searchText) async {
+    onSearch: (context, current, searchText) async {
       return await api.search(searchText);
     },
-    searchMode: SmartAutoSuggestBoxSearchMode.always,
+    searchMode: SmartAutoSuggestSearchMode.always,
     debounce: const Duration(milliseconds: 600),
   ),
   onSelected: (item) {},
 );
 ```
 
-### Smart Dropdown Positioning
-
-Control where the dropdown appears. It will automatically fall back to the opposite direction if insufficient space:
+### Dropdown Direction (SmartAutoSuggestBox only)
 
 ```dart
 SmartAutoSuggestBox<String>(
-  dataSource: SmartAutoSuggestBoxDataSource(
-    initialList: (context) => myItems,
-  ),
-  direction: SmartAutoSuggestBoxDirection.bottom, // default
+  dataSource: SmartAutoSuggestDataSource(initialList: (c) => items),
+  direction: SmartAutoSuggestBoxDirection.top,   // falls back if no space
   onSelected: (item) {},
 );
 ```
 
 | Direction | Description |
 |-----------|-------------|
-| `bottom`  | Shows below the text field. Falls back to `top` if insufficient space. |
-| `top`     | Shows above the text field. Falls back to `bottom` if insufficient space. |
-| `start`   | Shows at the start side (left in LTR, right in RTL). Falls back to `end`. |
-| `end`     | Shows at the end side (right in LTR, left in RTL). Falls back to `start`. |
+| `bottom`  | Below the text field. Falls back to `top`. |
+| `top`     | Above the text field. Falls back to `bottom`. |
+| `start`   | Start side (left in LTR). Falls back to `end`. |
+| `end`     | End side (right in LTR). Falls back to `start`. |
 
 ### Form Validation
 
 ```dart
-SmartAutoSuggestBox<String>.form(
-  dataSource: SmartAutoSuggestBoxDataSource(
-    initialList: (context) => myItems,
-  ),
+SmartAutoSuggestView.form(
+  dataSource: SmartAutoSuggestDataSource(initialList: (c) => items),
   validator: (value) {
-    if (value == null || value.isEmpty) return 'Required field';
+    if (value == null || value.isEmpty) return 'Required';
     return null;
   },
   autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -131,55 +140,37 @@ SmartAutoSuggestBox<String>.form(
 );
 ```
 
-### Custom Item Builder
-
-```dart
-SmartAutoSuggestBox<String>(
-  dataSource: SmartAutoSuggestBoxDataSource(
-    initialList: (context) => myItems,
-  ),
-  itemBuilder: (context, item) {
-    return ListTile(
-      leading: const Icon(Icons.label),
-      title: Text(item.label),
-      subtitle: Text('Value: ${item.value}'),
-    );
-  },
-  onSelected: (item) {},
-);
-```
-
-## SmartAutoSuggestBoxDataSource API
+## SmartAutoSuggestDataSource API
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `initialList` | `List<Item> Function(BuildContext)?` | `null` | Sync callback for initial items |
-| `onSearch` | `Future<List<Item>> Function(BuildContext, List<Item>, String?)?` | `null` | Async search callback |
-| `searchMode` | `SmartAutoSuggestBoxSearchMode` | `onNoLocalResults` | When to trigger `onSearch` |
+| `initialList` | `List<SmartAutoSuggestItem<T>> Function(BuildContext)?` | `null` | Sync initial items |
+| `onSearch` | `Future<List<SmartAutoSuggestItem<T>>> Function(BuildContext, List, String?)?` | `null` | Async search |
+| `searchMode` | `SmartAutoSuggestSearchMode` | `onNoLocalResults` | When to trigger `onSearch` |
 | `debounce` | `Duration` | `400ms` | Debounce before calling `onSearch` |
 
-## Migration from 0.0.x
+## SmartAutoSuggestView unique parameters
 
-```dart
-// Before (deprecated)
-SmartAutoSuggestBox(
-  items: [item1, item2],
-  onNoResultsFound: (text) async => await api.search(text),
-);
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `listMaxHeight` | `double` | `380` | Max height of the inline suggestion list |
+| `showListWhenEmpty` | `bool` | `true` | Show list when text field is empty |
 
-// After
-SmartAutoSuggestBox(
-  dataSource: SmartAutoSuggestBoxDataSource(
-    initialList: (context) => [item1, item2],
-    onSearch: (context, currentItems, searchText) async {
-      return await api.search(searchText);
-    },
-  ),
-);
-```
+## Migration from 0.1.x
+
+All old type names are kept as deprecated `typedef` aliases — no code changes required.
+Rename at your own pace:
+
+| Old | New |
+|-----|-----|
+| `SmartAutoSuggestBoxItem` | `SmartAutoSuggestItem` |
+| `SmartAutoSuggestBoxDataSource` | `SmartAutoSuggestDataSource` |
+| `SmartAutoSuggestBoxSearchMode` | `SmartAutoSuggestSearchMode` |
+| `SmartAutoSuggestBoxSorter` | `SmartAutoSuggestSorter` |
+| `SmartAutoSuggestBoxItemBuilder` | `SmartAutoSuggestItemBuilder` |
 
 ## Additional Information
 
-- [Example app](example/) - Full working example with all features
-- [CHANGELOG](CHANGELOG.md) - Version history and breaking changes
+- [Example app](example/) — complete demo with both widgets
+- [CHANGELOG](CHANGELOG.md) — version history
 - File issues on [GitHub](https://github.com/GeniusSystems24/smart_auto_suggest_box/issues)

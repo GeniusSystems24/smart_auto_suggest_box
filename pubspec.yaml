@@ -1,6 +1,6 @@
 name: smart_auto_suggest_box
 description: "A highly customizable auto-suggest text field with smart dropdown positioning that adapts to available screen space."
-version: 0.1.0
+version: 0.2.0
 homepage: null
 
 environment:

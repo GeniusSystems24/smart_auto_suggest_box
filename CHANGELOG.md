@@ -1,6 +1,55 @@
 # ChangeLog
 
+## 0.2.0
+
+### Features
+
+* **`SmartAutoSuggestView`**: New inline widget that shows a `TextField` with a
+  suggestion list rendered directly below it in the normal widget tree — no
+  floating overlay. Ideal for search screens, filter panels, and embedded search
+  UIs. Shares the same `SmartAutoSuggestDataSource` API as `SmartAutoSuggestBox`.
+  * `listMaxHeight`: maximum height of the inline suggestion list (default 380px).
+  * `showListWhenEmpty`: whether to display the list when the text field is empty (default `true`).
+  * Supports `.form` constructor with `validator` and `autovalidateMode`.
+  * Full keyboard navigation (↑ ↓ Enter).
+
+* **Shared-type rename** — types that are shared between `SmartAutoSuggestBox`
+  and `SmartAutoSuggestView` have been renamed to drop the `Box` infix:
+
+  | Old name | New name |
+  |---|---|
+  | `SmartAutoSuggestBoxItem` | `SmartAutoSuggestItem` |
+  | `SmartAutoSuggestBoxDataSource` | `SmartAutoSuggestDataSource` |
+  | `SmartAutoSuggestBoxSearchMode` | `SmartAutoSuggestSearchMode` |
+  | `SmartAutoSuggestBoxSorter` | `SmartAutoSuggestSorter` |
+  | `SmartAutoSuggestBoxItemBuilder` | `SmartAutoSuggestItemBuilder` |
+
+### Deprecations
+
+* All five old names above are kept as deprecated `typedef` aliases for full
+  backward compatibility — no code changes required to migrate.
+
+### Example
+
+* Updated example app with a bottom `NavigationBar` switching between
+  `SmartAutoSuggestBox` (floating overlay) and `SmartAutoSuggestView` (inline list) demos.
+* Updated all example code to use the new type names.
+
 ## 0.1.0
+
+### Features
+
+* **`SmartAutoSuggestDataSource`** (was `SmartAutoSuggestBoxDataSource`): New data source abstraction.
+  * `initialList`: Synchronous callback to provide initial items with access to `BuildContext`.
+  * `onSearch`: Async search callback that receives `(context, currentItems, searchText)`.
+  * `searchMode`: Controls when `onSearch` is invoked — `onNoLocalResults` (default) or `always`.
+  * `debounce`: Configurable debounce duration (default: 400ms).
+* **`SmartAutoSuggestSearchMode`** (was `SmartAutoSuggestBoxSearchMode`): Enum to control search behavior.
+
+### Deprecations
+
+* `items` constructor parameter — use `dataSource` with `initialList` instead.
+* `onNoResultsFound` — use `dataSource` with `onSearch` instead.
 
 ### Features
 
