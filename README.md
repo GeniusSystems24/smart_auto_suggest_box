@@ -27,10 +27,39 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 ```yaml
 dependencies:
   smart_auto_suggest_box: ^0.2.0
+
+# localization (optional, but recommended)
+  flutter_localizations:
+    sdk: flutter
 ```
 
 ```bash
 flutter pub get
+```
+
+## Localization setup
+
+To enable localizations, add the following to your `MaterialApp`:
+
+```dart
+import 'package:smart_auto_suggest_box/smart_auto_suggest_box.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // for GlobalMaterialLocalizations
+
+/*
+... other MaterialApp properties
+*/
+
+localizationsDelegates: const [
+  SmartAutoSuggestBoxLocalizations.delegate,
+  // ...app's other delegates (e.g. GlobalMaterialLocalizations.delegate)
+],
+supportedLocales:[
+  // Add your app's supported locales here,like:
+  const Locale('ar'), // Arabic
+  const Locale('fa'), // Persian
+  const Locale('en'), // English
+  // ...other locales
+],
 ```
 
 ## Usage
