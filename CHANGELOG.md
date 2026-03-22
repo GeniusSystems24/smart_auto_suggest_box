@@ -1,5 +1,24 @@
 # ChangeLog
 
+## 0.2.1
+
+### Fixes
+
+* **Keyboard-aware overlay sizing** (`SmartAutoSuggestBox`):
+  popup placement/height now accounts for keyboard insets
+  (`MediaQuery.viewInsets.bottom`) instead of relying on safe padding only.
+* **Direction priority + best-space fallback**:
+  the preferred direction is tried first; if it cannot fit the popup target
+  size, the overlay falls back to the direction with the largest available
+  space.
+* **Auto-scroll for constrained layouts**:
+  when all directions are constrained, the nearest scrollable parent is
+  auto-scrolled to improve available space, then the overlay is recomputed.
+* **Overlay reacts to keyboard metric changes**:
+  overlay now rebuilds when keyboard opens/closes to keep placement accurate.
+* Added/updated widget tests covering keyboard-aware placement, fallback
+  behavior, and auto-scroll behavior.
+
 ## 0.2.0
 
 ### Features
