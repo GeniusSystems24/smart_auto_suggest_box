@@ -1,0 +1,6 @@
+{
+    "searchingInServer": "Mencari di server...",
+    "searchingInServerHint": "Silakan tunggu sementara kami mengambil hasil dari server.",
+    "noResultsFound": "Tidak ada hasil ditemukan",
+    "noResultsFoundHint": "Kami tidak dapat menemukan hasil yang cocok dengan pencarian Anda. Coba kueri lain."
+}
