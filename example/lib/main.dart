@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:smart_auto_suggest_box/generated/l10n.dart';
 import 'package:smart_auto_suggest_box/smart_auto_suggest_box.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,6 +18,14 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+      localizationsDelegates: const [
+        SmartAutoSuggestBoxLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales:
+          SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
       home: const SmartAutoSuggestBoxExample(),
     );
   }
