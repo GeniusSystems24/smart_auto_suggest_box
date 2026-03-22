@@ -39,6 +39,82 @@ enum FluentTextChangedReason {
   cleared,
 }
 
+/// Controls when [SmartAutoSuggestBoxDataSource.onSearch] is invoked.
+enum SmartAutoSuggestBoxSearchMode {
+  /// Only calls [SmartAutoSuggestBoxDataSource.onSearch] when local filtering
+  /// yields no results. This is the default behavior.
+  onNoLocalResults,
+
+  /// Calls [SmartAutoSuggestBoxDataSource.onSearch] on every text change
+  /// (after debounce), regardless of local results.
+  always,
+}
+
+/// A data source configuration for [SmartAutoSuggestBox] that provides
+/// flexible data fetching capabilities including sync initial data
+/// and async search.
+///
+/// Example:
+/// ```dart
+/// SmartAutoSuggestBox<String>(
+///   dataSource: SmartAutoSuggestBoxDataSource(
+///     initialList: (context) => [
+///       SmartAutoSuggestBoxItem(value: 'apple', label: 'Apple'),
+///       SmartAutoSuggestBoxItem(value: 'banana', label: 'Banana'),
+///     ],
+///     onSearch: (context, currentItems, searchText) async {
+///       final results = await api.search(searchText);
+///       return results.map((r) =>
+///         SmartAutoSuggestBoxItem(value: r.id, label: r.name),
+///       ).toList();
+///     },
+///   ),
+/// )
+/// ```
+class SmartAutoSuggestBoxDataSource<T> {
+  /// Synchronous initial items provided when the widget first builds.
+  ///
+  /// Called once during [initState] with the widget's [BuildContext].
+  final List<SmartAutoSuggestBoxItem<T>> Function(BuildContext context)?
+      initialList;
+
+  /// Async search callback invoked when new data is needed.
+  ///
+  /// Parameters:
+  /// - [context]: The widget's build context
+  /// - [currentItems]: The current list of items in the widget
+  /// - [searchText]: The current search text (null when loading initial data)
+  ///
+  /// When invoked depends on [searchMode]:
+  /// - [SmartAutoSuggestBoxSearchMode.onNoLocalResults]: Called only when
+  ///   local filtering yields no results.
+  /// - [SmartAutoSuggestBoxSearchMode.always]: Called on every text change
+  ///   after the [debounce] duration.
+  final Future<List<SmartAutoSuggestBoxItem<T>>> Function(
+    BuildContext context,
+    List<SmartAutoSuggestBoxItem<T>> currentItems,
+    String? searchText,
+  )? onSearch;
+
+  /// Controls when [onSearch] is invoked.
+  ///
+  /// Defaults to [SmartAutoSuggestBoxSearchMode.onNoLocalResults].
+  final SmartAutoSuggestBoxSearchMode searchMode;
+
+  /// Debounce duration before calling [onSearch].
+  ///
+  /// Defaults to 400ms. Set to [Duration.zero] for no debounce.
+  final Duration debounce;
+
+  /// Creates a data source for [SmartAutoSuggestBox].
+  const SmartAutoSuggestBoxDataSource({
+    this.initialList,
+    this.onSearch,
+    this.searchMode = SmartAutoSuggestBoxSearchMode.onNoLocalResults,
+    this.debounce = const Duration(milliseconds: 400),
+  });
+}
+
 enum SmartAutoSuggestBoxDirection {
   /// The suggestions overlay will be shown below the text box.
   /// Falls back to top if insufficient space below.
@@ -131,9 +207,15 @@ class SmartAutoSuggestBoxItem<T> {
 
 class SmartAutoSuggestBox<T> extends StatefulWidget {
   /// Creates a fluent-styled auto suggest box.
+  ///
+  /// Use [dataSource] to provide items and search functionality.
+  /// The deprecated [items] parameter is still supported for backward
+  /// compatibility.
   SmartAutoSuggestBox({
     super.key,
-    required List<SmartAutoSuggestBoxItem<T>> items,
+    @Deprecated('Use dataSource with initialList instead')
+    List<SmartAutoSuggestBoxItem<T>> items = const [],
+    this.dataSource,
     this.controller,
     this.onChanged,
     this.onSelected,
@@ -161,6 +243,7 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.enabled = true,
     this.inputFormatters,
     this.maxPopupHeight = kSmartAutoSuggestBoxPopupMaxHeight,
+    @Deprecated('Use dataSource with onSearch instead')
     this.onNoResultsFound,
     this.waitingBuilder,
     this.tileHeight = kComboBoxItemHeight,
@@ -170,12 +253,16 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.offset,
   }) : autovalidateMode = AutovalidateMode.disabled,
        validator = null,
-       items = ValueNotifier(items.toSet());
+       items = dataSource != null
+           ? ValueNotifier(<SmartAutoSuggestBoxItem<T>>{})
+           : ValueNotifier(items.toSet());
 
   /// Creates a fluent-styled auto suggest form box.
   SmartAutoSuggestBox.form({
     super.key,
-    required List<SmartAutoSuggestBoxItem<T>> items,
+    @Deprecated('Use dataSource with initialList instead')
+    List<SmartAutoSuggestBoxItem<T>> items = const [],
+    this.dataSource,
     this.controller,
     this.onChanged,
     this.onSelected,
@@ -205,6 +292,7 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.enabled = true,
     this.inputFormatters,
     this.maxPopupHeight = kSmartAutoSuggestBoxPopupMaxHeight,
+    @Deprecated('Use dataSource with onSearch instead')
     this.onNoResultsFound,
     this.waitingBuilder,
     this.tileHeight = kComboBoxItemHeight,
@@ -212,7 +300,9 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.offset,
-  }) : items = ValueNotifier(items.toSet());
+  }) : items = dataSource != null
+           ? ValueNotifier(<SmartAutoSuggestBoxItem<T>>{})
+           : ValueNotifier(items.toSet());
 
   /// offset: const Offset(0, 0.8),
   /// Creates a fluent-styled auto suggest box.
@@ -228,11 +318,19 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
   /// The direction in which the suggestions overlay will be shown
   final SmartAutoSuggestBoxDirection direction;
 
-  /// The list of items to display to the user to pick
+  /// The data source for providing items and search functionality.
+  ///
+  /// When provided, this replaces both [items] and [onNoResultsFound].
+  final SmartAutoSuggestBoxDataSource<T>? dataSource;
+
+  /// The list of items to display to the user to pick.
+  ///
+  /// Deprecated: Use [dataSource] with [SmartAutoSuggestBoxDataSource.initialList] instead.
   final ValueNotifier<Set<SmartAutoSuggestBoxItem<T>>> items;
 
+  @Deprecated('Use dataSource with onSearch instead')
   final Future<List<SmartAutoSuggestBoxItem<T>>> Function(String text)?
-  onNoResultsFound;
+      onNoResultsFound;
 
   /// The controller used to have control over what to show on the [TextBox].
   final TextEditingController? controller;
@@ -445,6 +543,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
   Size _boxSize = Size.zero;
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
   String lastSearchLoaded = "";
+  Timer? _debounceTimer;
 
   late Set<SmartAutoSuggestBoxItem<T>> _localItems;
 
@@ -473,11 +572,19 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
         dismissOverlay();
         _boxSize = box.size;
       }
+
+      // Populate items from dataSource.initialList
+      if (widget.dataSource?.initialList != null) {
+        final initial = widget.dataSource!.initialList!(context);
+        widget.items.value = initial.toSet();
+        _updateLocalItems();
+      }
     });
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _focusNode.removeListener(_handleFocusChanged);
     _controller.removeListener(_handleTextChanged);
     _focusStreamController.close();
@@ -513,6 +620,15 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
       _dynamicItemsController.add(widget.items.value);
     }
 
+    // Re-populate items if dataSource changed
+    if (widget.dataSource != oldWidget.dataSource &&
+        widget.dataSource?.initialList != null) {
+      final initial = widget.dataSource!.initialList!(context);
+      widget.items.value = initial.toSet();
+      _updateLocalItems();
+      _dynamicItemsController.add(widget.items.value);
+    }
+
     super.didUpdateWidget(oldWidget);
   }
 
@@ -532,11 +648,85 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
 
     _updateLocalItems();
 
+    // If searchMode is always, trigger search on every text change
+    if (widget.dataSource?.searchMode == SmartAutoSuggestBoxSearchMode.always &&
+        widget.dataSource?.onSearch != null) {
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(widget.dataSource!.debounce, () {
+        _buildSearchCallback()?.call(_controller.text.trim());
+      });
+    }
+
     // Update the overlay when the text box size has changed
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       _updateLocalItems();
     });
+  }
+
+  /// Builds a unified search callback that handles both the new [dataSource]
+  /// path and the deprecated [onNoResultsFound] path.
+  Future Function(String text)? _buildSearchCallback() {
+    // New data source path
+    if (widget.dataSource?.onSearch != null) {
+      return (text) async {
+        if (widget.dataSource!.debounce > Duration.zero &&
+            widget.dataSource?.searchMode != SmartAutoSuggestBoxSearchMode.always) {
+          await Future.delayed(widget.dataSource!.debounce);
+        }
+        final currentText = _controller.value.text.trim();
+        if (currentText.isNotEmpty &&
+            !lastSearchLoaded.startsWith(currentText) &&
+            text == currentText) {
+          lastSearchLoaded = currentText;
+          isLoading.value = true;
+          try {
+            final newItems = await widget.dataSource!.onSearch!(
+              context,
+              widget.items.value.toList(),
+              text,
+            );
+            if (newItems.isNotEmpty) {
+              widget.items.value = {...widget.items.value, ...newItems};
+              _localItems = sorter(_controller.text, widget.items.value);
+            }
+          } catch (_) {
+            // Swallow errors like the existing .onError handler
+          } finally {
+            isLoading.value = false;
+          }
+        }
+      };
+    }
+
+    // Deprecated path - existing onNoResultsFound
+    // ignore: deprecated_member_use_from_same_package
+    if (widget.onNoResultsFound != null) {
+      return (text) async {
+        await Future.delayed(const Duration(milliseconds: 400));
+        final currentText = _controller.value.text.trim();
+        if (currentText.isNotEmpty &&
+            !lastSearchLoaded.startsWith(currentText) &&
+            text == currentText) {
+          lastSearchLoaded = currentText;
+          isLoading.value = true;
+          // ignore: deprecated_member_use_from_same_package
+          final newItems = await widget.onNoResultsFound!(text)
+              .onError((error, stackTrace) => []);
+          await Future.delayed(const Duration(milliseconds: 300));
+          if (newItems.isNotEmpty) {
+            widget.items.value = {
+              ...widget.items.value,
+              ...newItems,
+            };
+            _localItems = sorter(_controller.text, widget.items.value);
+          }
+          isLoading.value = false;
+        }
+      };
+    }
+
+    return null;
   }
 
   /// Whether the overlay is currently visible.
@@ -724,34 +914,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
                   );
                 },
                 noResultsFoundBuilder: widget.noResultsFoundBuilder,
-                onNoResultsFound: widget.onNoResultsFound == null
-                    ? null
-                    : (text) async {
-                        await Future.delayed(const Duration(milliseconds: 400));
-                        final currentText = _controller.value.text.trim();
-                        if (currentText.isNotEmpty &&
-                            !lastSearchLoaded.startsWith(currentText) &&
-                            text == currentText) {
-                          lastSearchLoaded = currentText;
-                          isLoading.value = true;
-                          final newItems = await widget.onNoResultsFound!(text)
-                              .onError((error, stackTrace) => []);
-                          await Future.delayed(
-                            const Duration(milliseconds: 300),
-                          );
-                          if (newItems.isNotEmpty) {
-                            widget.items.value = {
-                              ...widget.items.value,
-                              ...newItems,
-                            };
-                            _localItems = sorter(
-                              _controller.text,
-                              widget.items.value,
-                            );
-                          }
-                          isLoading.value = false;
-                        }
-                      },
+                onNoResultsFound: _buildSearchCallback(),
               ),
             ),
           ),

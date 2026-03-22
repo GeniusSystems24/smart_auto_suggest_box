@@ -1,5 +1,27 @@
 # ChangeLog
 
+## 0.1.0
+
+### Features
+
+* **`SmartAutoSuggestBoxDataSource`**: New data source abstraction that replaces the `items` and `onNoResultsFound` parameters with a cleaner, unified API.
+  * `initialList`: Synchronous callback to provide initial items with access to `BuildContext`.
+  * `onSearch`: Async search callback that receives `(context, currentItems, searchText)`.
+  * `searchMode`: Controls when `onSearch` is invoked — `onNoLocalResults` (default) or `always`.
+  * `debounce`: Configurable debounce duration (default: 400ms).
+* **`SmartAutoSuggestBoxSearchMode`**: New enum to control search behavior:
+  * `onNoLocalResults`: Only calls `onSearch` when local filtering yields no results.
+  * `always`: Calls `onSearch` on every text change after debounce.
+
+### Deprecations
+
+* `items` constructor parameter — use `dataSource` with `initialList` instead.
+* `onNoResultsFound` — use `dataSource` with `onSearch` instead.
+
+### Example
+
+* Updated example app with 4 demos: `initialList`, `onSearch`, `searchMode.always`, and deprecated `items` backward compatibility.
+
 ## 0.0.2
 
 ### Features
