@@ -1,3 +1,5 @@
+# ChangeLog
+
 ## 0.0.2
 
 ### Features
@@ -8,8 +10,10 @@
 
 ### Breaking Changes
 
-* `SmartAutoSuggestBoxDirection.below` is now deprecated. Use `SmartAutoSuggestBoxDirection.bottom` instead.
-* `SmartAutoSuggestBoxDirection.above` is now deprecated. Use `SmartAutoSuggestBoxDirection.top` instead.
+* `SmartAutoSuggestBoxDirection.below` is now deprecated.
+* Use `SmartAutoSuggestBoxDirection.bottom` instead.
+* `SmartAutoSuggestBoxDirection.above` is now deprecated.
+* Use `SmartAutoSuggestBoxDirection.top` instead.
 
 ### Example
 

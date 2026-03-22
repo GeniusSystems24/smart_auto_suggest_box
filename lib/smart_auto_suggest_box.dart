@@ -55,12 +55,6 @@ enum SmartAutoSuggestBoxDirection {
   /// The suggestions overlay will be shown at the end (right in LTR, left in RTL).
   /// Falls back to start if insufficient space at end.
   end,
-
-  @Deprecated('Use SmartAutoSuggestBoxDirection.bottom instead')
-  below,
-
-  @Deprecated('Use SmartAutoSuggestBoxDirection.top instead')
-  above,
 }
 
 /// The default max height the auto suggest box popup can have
@@ -562,14 +556,18 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
     // Normalize deprecated values
     final normalized = switch (preferred) {
       // ignore: deprecated_member_use_from_same_package
-      SmartAutoSuggestBoxDirection.below => SmartAutoSuggestBoxDirection.bottom,
+      SmartAutoSuggestBoxDirection.bottom =>
+        SmartAutoSuggestBoxDirection.bottom,
       // ignore: deprecated_member_use_from_same_package
-      SmartAutoSuggestBoxDirection.above => SmartAutoSuggestBoxDirection.top,
+      SmartAutoSuggestBoxDirection.top => SmartAutoSuggestBoxDirection.top,
       _ => preferred,
     };
 
     final spaceBelow =
-        screenSize.height - viewPadding.bottom - globalOffset.dy - boxSize.height;
+        screenSize.height -
+        viewPadding.bottom -
+        globalOffset.dy -
+        boxSize.height;
     final spaceAbove = globalOffset.dy - viewPadding.top;
     final spaceEnd = screenSize.width - globalOffset.dx - boxSize.width;
     final spaceStart = globalOffset.dx;
@@ -596,9 +594,6 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
         if (spaceEnd >= minSpace) return SmartAutoSuggestBoxDirection.end;
         if (spaceStart > spaceEnd) return SmartAutoSuggestBoxDirection.start;
         return SmartAutoSuggestBoxDirection.end;
-
-      default:
-        return SmartAutoSuggestBoxDirection.bottom;
     }
   }
 
@@ -648,7 +643,10 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
           overlayWidth = box.size.width;
           if (resolvedDirection == SmartAutoSuggestBoxDirection.bottom) {
             final spaceBelow =
-                screenSize.height - viewPadding.bottom - globalOffset.dy - box.size.height;
+                screenSize.height -
+                viewPadding.bottom -
+                globalOffset.dy -
+                box.size.height;
             maxHeight = spaceBelow.clamp(0.0, widget.maxPopupHeight);
             targetAnchor = Alignment.bottomCenter;
             followerAnchor = Alignment.topCenter;
@@ -672,7 +670,9 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
                 : globalOffset.dx;
             overlayWidth = spaceStart.clamp(100.0, box.size.width);
             targetAnchor = isRtl ? Alignment.centerRight : Alignment.centerLeft;
-            followerAnchor = isRtl ? Alignment.centerLeft : Alignment.centerRight;
+            followerAnchor = isRtl
+                ? Alignment.centerLeft
+                : Alignment.centerRight;
             offset = widget.offset ?? Offset(isRtl ? 0.8 : -0.8, 0);
           } else {
             final spaceEnd = isRtl
@@ -680,7 +680,9 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
                 : screenSize.width - globalOffset.dx - box.size.width;
             overlayWidth = spaceEnd.clamp(100.0, box.size.width);
             targetAnchor = isRtl ? Alignment.centerLeft : Alignment.centerRight;
-            followerAnchor = isRtl ? Alignment.centerRight : Alignment.centerLeft;
+            followerAnchor = isRtl
+                ? Alignment.centerRight
+                : Alignment.centerLeft;
             offset = widget.offset ?? Offset(isRtl ? -0.8 : 0.8, 0);
           }
         }
@@ -1033,41 +1035,32 @@ class _SmartAutoSuggestBoxOverlayState<T>
     super.dispose();
   }
 
-  EdgeInsets _resolveMargin(SmartAutoSuggestBoxDirection direction) {
+  EdgeInsetsGeometry _resolveMargin(SmartAutoSuggestBoxDirection direction) {
     switch (direction) {
-      // ignore: deprecated_member_use_from_same_package
-      case SmartAutoSuggestBoxDirection.above:
       case SmartAutoSuggestBoxDirection.top:
-        return const EdgeInsets.only(left: 8, right: 8, bottom: 8);
+        return const EdgeInsetsDirectional.only(start: 8, end: 8, bottom: 8);
       case SmartAutoSuggestBoxDirection.start:
-        return const EdgeInsets.only(top: 8, bottom: 8, right: 8);
+        return const EdgeInsetsDirectional.only(top: 8, bottom: 8, end: 8);
       case SmartAutoSuggestBoxDirection.end:
-        return const EdgeInsets.only(top: 8, bottom: 8, left: 8);
-      // ignore: deprecated_member_use_from_same_package
-      case SmartAutoSuggestBoxDirection.below:
+        return const EdgeInsetsDirectional.only(top: 8, bottom: 8, start: 8);
       case SmartAutoSuggestBoxDirection.bottom:
-      default:
-        return const EdgeInsets.only(left: 8, right: 8);
+        return const EdgeInsetsDirectional.only(start: 8, end: 8, top: 8);
     }
   }
 
-  BorderRadius _resolveBorderRadius(SmartAutoSuggestBoxDirection direction) {
+  BorderRadiusGeometry _resolveBorderRadius(
+    SmartAutoSuggestBoxDirection direction,
+  ) {
     const r = Radius.circular(4.0);
     switch (direction) {
-      // ignore: deprecated_member_use_from_same_package
-      case SmartAutoSuggestBoxDirection.below:
       case SmartAutoSuggestBoxDirection.bottom:
-        return const BorderRadius.vertical(bottom: r);
-      // ignore: deprecated_member_use_from_same_package
-      case SmartAutoSuggestBoxDirection.above:
+        return const BorderRadiusDirectional.vertical(bottom: r);
       case SmartAutoSuggestBoxDirection.top:
-        return const BorderRadius.vertical(top: r);
+        return const BorderRadiusDirectional.vertical(top: r);
       case SmartAutoSuggestBoxDirection.start:
-        return const BorderRadius.horizontal(left: r);
+        return const BorderRadiusDirectional.horizontal(end: r);
       case SmartAutoSuggestBoxDirection.end:
-        return const BorderRadius.horizontal(right: r);
-      default:
-        return const BorderRadius.vertical(bottom: r);
+        return const BorderRadiusDirectional.horizontal(start: r);
     }
   }
 
@@ -1181,7 +1174,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                           SmartAutoSuggestBoxDirection.top ||
                                       // ignore: deprecated_member_use_from_same_package
                                       widget.direction ==
-                                          SmartAutoSuggestBoxDirection.above
+                                          SmartAutoSuggestBoxDirection.top
                                   ? children.reversed.toList()
                                   : children,
                             );
