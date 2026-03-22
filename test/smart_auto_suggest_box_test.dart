@@ -1,0 +1,1 @@
+// A simple test file for the SmartAutoSuggestBox widget

@@ -1,0 +1,6 @@
+{
+    "searchingInServer": "Searching in server...",
+    "searchingInServerHint": "Please wait while we fetch the results from the server.",
+    "noResultsFound": "No results found",
+    "noResultsFoundHint": "We couldn't find any results matching your search. Please try a different query."
+}
