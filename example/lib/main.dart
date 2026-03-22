@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Smart Auto Suggest Box Demo',
+      title: 'Smart Auto Suggest Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -26,39 +26,105 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales:
           SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
-      home: const SmartAutoSuggestBoxExample(),
+      home: const _DemoHome(),
     );
   }
 }
 
-class SmartAutoSuggestBoxExample extends StatefulWidget {
-  const SmartAutoSuggestBoxExample({super.key});
+// ─────────────────────────────────────────────────────────────────────────────
+// Home with bottom navigation between the two widget demos
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DemoHome extends StatefulWidget {
+  const _DemoHome();
 
   @override
-  State<SmartAutoSuggestBoxExample> createState() =>
-      _SmartAutoSuggestBoxExampleState();
+  State<_DemoHome> createState() => _DemoHomeState();
 }
 
-class _SmartAutoSuggestBoxExampleState
-    extends State<SmartAutoSuggestBoxExample> {
-  SmartAutoSuggestBoxDirection _selectedDirection =
+class _DemoHomeState extends State<_DemoHome> {
+  int _index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _index,
+        children: const [
+          SmartAutoSuggestBoxDemo(),
+          SmartAutoSuggestViewDemo(),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _index,
+        onDestinationSelected: (i) => setState(() => _index = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.text_fields),
+            label: 'Box (floating)',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.list_alt),
+            label: 'View (inline)',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sample data
+// ─────────────────────────────────────────────────────────────────────────────
+
+List<SmartAutoSuggestItem<String>> get _fruits => [
+      SmartAutoSuggestItem(value: 'apple', label: 'Apple'),
+      SmartAutoSuggestItem(value: 'apricot', label: 'Apricot'),
+      SmartAutoSuggestItem(value: 'avocado', label: 'Avocado'),
+      SmartAutoSuggestItem(value: 'banana', label: 'Banana'),
+      SmartAutoSuggestItem(value: 'cherry', label: 'Cherry'),
+      SmartAutoSuggestItem(value: 'date', label: 'Date'),
+      SmartAutoSuggestItem(value: 'elderberry', label: 'Elderberry'),
+      SmartAutoSuggestItem(value: 'fig', label: 'Fig'),
+      SmartAutoSuggestItem(value: 'grape', label: 'Grape'),
+      SmartAutoSuggestItem(value: 'honeydew', label: 'Honeydew'),
+      SmartAutoSuggestItem(value: 'kiwi', label: 'Kiwi'),
+      SmartAutoSuggestItem(value: 'lemon', label: 'Lemon'),
+      SmartAutoSuggestItem(value: 'mango', label: 'Mango'),
+      SmartAutoSuggestItem(value: 'orange', label: 'Orange'),
+    ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SmartAutoSuggestBox demo (floating overlay)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class SmartAutoSuggestBoxDemo extends StatefulWidget {
+  const SmartAutoSuggestBoxDemo({super.key});
+
+  @override
+  State<SmartAutoSuggestBoxDemo> createState() =>
+      _SmartAutoSuggestBoxDemoState();
+}
+
+class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
+  SmartAutoSuggestBoxDirection _direction =
       SmartAutoSuggestBoxDirection.bottom;
-  String? _selectedValue;
+  String? _selected;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Smart Auto Suggest Box'),
+        title: const Text('SmartAutoSuggestBox'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         children: [
-          // ── Direction selector ──
+          // Direction selector
           const Text(
             'Dropdown Direction:',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           SegmentedButton<SmartAutoSuggestBoxDirection>(
@@ -84,38 +150,23 @@ class _SmartAutoSuggestBoxExampleState
                 icon: Icon(Icons.arrow_forward),
               ),
             ],
-            selected: {_selectedDirection},
-            onSelectionChanged: (value) {
-              setState(() => _selectedDirection = value.first);
-            },
+            selected: {_direction},
+            onSelectionChanged: (v) => setState(() => _direction = v.first),
           ),
           const SizedBox(height: 24),
 
-          // ── 1. DataSource with initialList ──
-          _buildSectionHeader(
+          // ── 1. DataSource with initialList ───────────────────────────────
+          _sectionHeader(
             context,
             title: '1. DataSource with initialList',
-            subtitle: 'Uses SmartAutoSuggestBoxDataSource to provide initial items.',
+            subtitle: 'Sync initial items via SmartAutoSuggestDataSource.',
           ),
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
-            dataSource: SmartAutoSuggestBoxDataSource(
-              initialList: (context) => [
-                SmartAutoSuggestBoxItem(value: 'apple', label: 'Apple'),
-                SmartAutoSuggestBoxItem(value: 'banana', label: 'Banana'),
-                SmartAutoSuggestBoxItem(value: 'cherry', label: 'Cherry'),
-                SmartAutoSuggestBoxItem(value: 'date', label: 'Date'),
-                SmartAutoSuggestBoxItem(value: 'elderberry', label: 'Elderberry'),
-                SmartAutoSuggestBoxItem(value: 'fig', label: 'Fig'),
-                SmartAutoSuggestBoxItem(value: 'grape', label: 'Grape'),
-                SmartAutoSuggestBoxItem(value: 'honeydew', label: 'Honeydew'),
-                SmartAutoSuggestBoxItem(value: 'kiwi', label: 'Kiwi'),
-                SmartAutoSuggestBoxItem(value: 'lemon', label: 'Lemon'),
-                SmartAutoSuggestBoxItem(value: 'mango', label: 'Mango'),
-                SmartAutoSuggestBoxItem(value: 'orange', label: 'Orange'),
-              ],
+            dataSource: SmartAutoSuggestDataSource(
+              initialList: (context) => _fruits,
             ),
-            direction: _selectedDirection,
+            direction: _direction,
             decoration: const InputDecoration(
               labelText: 'Search fruits',
               hintText: 'Type to search...',
@@ -123,66 +174,51 @@ class _SmartAutoSuggestBoxExampleState
               prefixIcon: Icon(Icons.search),
             ),
             onSelected: (item) {
-              if (item != null) {
-                setState(() => _selectedValue = item.label);
-              }
+              if (item != null) setState(() => _selected = item.label);
             },
             onChanged: (text, reason) {
               if (reason == FluentTextChangedReason.cleared) {
-                setState(() => _selectedValue = null);
+                setState(() => _selected = null);
               }
             },
           ),
-          if (_selectedValue != null) ...[
+          if (_selected != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Selected: $_selectedValue',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              'Selected: $_selected',
+              style: TextStyle(
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ],
           const SizedBox(height: 32),
 
-          // ── 2. DataSource with onSearch (async) ──
-          _buildSectionHeader(
+          // ── 2. Async onSearch ────────────────────────────────────────────
+          _sectionHeader(
             context,
-            title: '2. DataSource with onSearch',
+            title: '2. DataSource with onSearch (async)',
             subtitle:
-                'Simulates async server search. Type a fruit name to trigger.',
+                'Calls onSearch when local filter yields no results. '
+                'Simulates a 1 s server delay.',
           ),
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
-            dataSource: SmartAutoSuggestBoxDataSource(
+            dataSource: SmartAutoSuggestDataSource(
               initialList: (context) => [],
-              onSearch: (context, currentItems, searchText) async {
-                // Simulate network delay
+              onSearch: (context, current, searchText) async {
                 await Future.delayed(const Duration(seconds: 1));
-                final allFruits = [
-                  'Apple', 'Apricot', 'Avocado', 'Banana', 'Blackberry',
-                  'Blueberry', 'Cherry', 'Coconut', 'Cranberry', 'Date',
-                  'Dragonfruit', 'Elderberry', 'Fig', 'Grape', 'Guava',
-                  'Honeydew', 'Jackfruit', 'Kiwi', 'Lemon', 'Lime',
-                  'Lychee', 'Mango', 'Melon', 'Nectarine', 'Orange',
-                  'Papaya', 'Peach', 'Pear', 'Pineapple', 'Plum',
-                  'Pomegranate', 'Raspberry', 'Strawberry', 'Watermelon',
-                ];
-                return allFruits
-                    .where((f) => f.toLowerCase().contains(
+                return _fruits
+                    .where((f) => f.label.toLowerCase().contains(
                         (searchText ?? '').toLowerCase()))
-                    .map((f) => SmartAutoSuggestBoxItem(
-                          value: f.toLowerCase(),
-                          label: f,
-                        ))
                     .toList();
               },
-              searchMode: SmartAutoSuggestBoxSearchMode.onNoLocalResults,
+              searchMode: SmartAutoSuggestSearchMode.onNoLocalResults,
               debounce: const Duration(milliseconds: 500),
             ),
-            direction: _selectedDirection,
+            direction: _direction,
             decoration: const InputDecoration(
               labelText: 'Server search',
-              hintText: 'Type to search from server...',
+              hintText: 'Type to fetch from server...',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.cloud_download),
             ),
@@ -190,35 +226,30 @@ class _SmartAutoSuggestBoxExampleState
           ),
           const SizedBox(height: 32),
 
-          // ── 3. DataSource with searchMode.always ──
-          _buildSectionHeader(
+          // ── 3. searchMode.always ─────────────────────────────────────────
+          _sectionHeader(
             context,
-            title: '3. DataSource with searchMode.always',
+            title: '3. searchMode.always',
             subtitle:
-                'Calls onSearch on every keystroke (after debounce), '
-                'regardless of local results.',
+                'onSearch fires on every keystroke (after debounce).',
           ),
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
-            dataSource: SmartAutoSuggestBoxDataSource(
-              initialList: (context) => [
-                SmartAutoSuggestBoxItem(value: 'apple', label: 'Apple'),
-                SmartAutoSuggestBoxItem(value: 'banana', label: 'Banana'),
-              ],
-              onSearch: (context, currentItems, searchText) async {
-                await Future.delayed(const Duration(milliseconds: 800));
-                // Simulate returning additional items from server
+            dataSource: SmartAutoSuggestDataSource(
+              initialList: (context) => _fruits.take(3).toList(),
+              onSearch: (context, current, searchText) async {
+                await Future.delayed(const Duration(milliseconds: 600));
                 return [
-                  SmartAutoSuggestBoxItem(
+                  SmartAutoSuggestItem(
                     value: 'server_${searchText ?? ''}',
-                    label: 'Server result: ${searchText ?? ''}',
+                    label: '🔍 Server: ${searchText ?? ''}',
                   ),
                 ];
               },
-              searchMode: SmartAutoSuggestBoxSearchMode.always,
-              debounce: const Duration(milliseconds: 600),
+              searchMode: SmartAutoSuggestSearchMode.always,
+              debounce: const Duration(milliseconds: 500),
             ),
-            direction: _selectedDirection,
+            direction: _direction,
             decoration: const InputDecoration(
               labelText: 'Always search',
               hintText: 'Every keystroke triggers server search...',
@@ -227,60 +258,145 @@ class _SmartAutoSuggestBoxExampleState
             ),
             onSelected: (item) {},
           ),
-          const SizedBox(height: 32),
-
-          // ── 4. Deprecated items (backward compat) ──
-          _buildSectionHeader(
-            context,
-            title: '4. Deprecated items parameter',
-            subtitle: 'Still works for backward compatibility.',
-          ),
-          const SizedBox(height: 8),
-          SmartAutoSuggestBox<String>(
-            // ignore: deprecated_member_use
-            items: [
-              SmartAutoSuggestBoxItem(value: 'red', label: 'Red'),
-              SmartAutoSuggestBoxItem(value: 'green', label: 'Green'),
-              SmartAutoSuggestBoxItem(value: 'blue', label: 'Blue'),
-              SmartAutoSuggestBoxItem(value: 'yellow', label: 'Yellow'),
-            ],
-            direction: _selectedDirection,
-            decoration: const InputDecoration(
-              labelText: 'Colors (deprecated API)',
-              hintText: 'Type to filter...',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.palette),
-            ),
-            onSelected: (item) {},
-          ),
           const SizedBox(height: 48),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSectionHeader(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
+// ─────────────────────────────────────────────────────────────────────────────
+// SmartAutoSuggestView demo (inline list)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class SmartAutoSuggestViewDemo extends StatefulWidget {
+  const SmartAutoSuggestViewDemo({super.key});
+
+  @override
+  State<SmartAutoSuggestViewDemo> createState() =>
+      _SmartAutoSuggestViewDemoState();
+}
+
+class _SmartAutoSuggestViewDemoState extends State<SmartAutoSuggestViewDemo> {
+  String? _selected;
+  bool _showListWhenEmpty = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('SmartAutoSuggestView'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Options
+                SwitchListTile(
+                  title: const Text('showListWhenEmpty'),
+                  subtitle: const Text(
+                    'Show suggestions when text field is empty',
+                  ),
+                  value: _showListWhenEmpty,
+                  onChanged: (v) => setState(() => _showListWhenEmpty = v),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (_selected != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Selected: $_selected',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // The SmartAutoSuggestView fills remaining space
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SmartAutoSuggestView<String>(
+                dataSource: SmartAutoSuggestDataSource(
+                  initialList: (context) => _fruits,
+                  onSearch: (context, current, searchText) async {
+                    // Simulate server returning extra items
+                    await Future.delayed(const Duration(milliseconds: 700));
+                    return [
+                      SmartAutoSuggestItem(
+                        value: 'server_${searchText ?? ''}',
+                        label: '🔍 Server: ${searchText ?? ''}',
+                      ),
+                    ];
+                  },
+                  searchMode: SmartAutoSuggestSearchMode.onNoLocalResults,
+                  debounce: const Duration(milliseconds: 400),
+                ),
+                showListWhenEmpty: _showListWhenEmpty,
+                listMaxHeight: double.infinity, // fills the Expanded
+                decoration: InputDecoration(
+                  labelText: 'Search fruits',
+                  hintText: 'Type to filter...',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _selected != null
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _selected = null),
+                        )
+                      : null,
+                ),
+                onSelected: (item) {
+                  if (item != null) setState(() => _selected = item.label);
+                },
+                onChanged: (text, reason) {
+                  if (reason == FluentTextChangedReason.cleared) {
+                    setState(() => _selected = null);
+                  }
+                },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+Widget _sectionHeader(
+  BuildContext context, {
+  required String title,
+  required String subtitle,
+}) {
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
