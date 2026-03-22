@@ -40,10 +40,26 @@ enum FluentTextChangedReason {
 }
 
 enum SmartAutoSuggestBoxDirection {
-  /// The suggestions overlay will be shown below the text box
+  /// The suggestions overlay will be shown below the text box.
+  /// Falls back to top if insufficient space below.
+  bottom,
+
+  /// The suggestions overlay will be shown above the text box.
+  /// Falls back to bottom if insufficient space above.
+  top,
+
+  /// The suggestions overlay will be shown at the start (left in LTR, right in RTL).
+  /// Falls back to end if insufficient space at start.
+  start,
+
+  /// The suggestions overlay will be shown at the end (right in LTR, left in RTL).
+  /// Falls back to start if insufficient space at end.
+  end,
+
+  @Deprecated('Use SmartAutoSuggestBoxDirection.bottom instead')
   below,
 
-  /// The suggestions overlay will be shown above the text box
+  @Deprecated('Use SmartAutoSuggestBoxDirection.top instead')
   above,
 }
 
@@ -154,7 +170,7 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.onNoResultsFound,
     this.waitingBuilder,
     this.tileHeight = kComboBoxItemHeight,
-    this.direction = SmartAutoSuggestBoxDirection.below,
+    this.direction = SmartAutoSuggestBoxDirection.bottom,
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.offset,
@@ -198,7 +214,7 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.onNoResultsFound,
     this.waitingBuilder,
     this.tileHeight = kComboBoxItemHeight,
-    this.direction = SmartAutoSuggestBoxDirection.below,
+    this.direction = SmartAutoSuggestBoxDirection.bottom,
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.offset,
@@ -532,6 +548,60 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
   /// Whether the overlay is currently visible.
   bool get isOverlayVisible => _entry != null;
 
+  /// Resolves the preferred direction to the actual direction based on
+  /// available screen space. Falls back to the opposite direction if the
+  /// preferred direction doesn't have enough space.
+  SmartAutoSuggestBoxDirection _resolveDirection({
+    required Offset globalOffset,
+    required Size boxSize,
+    required Size screenSize,
+    required EdgeInsets viewPadding,
+  }) {
+    final preferred = widget.direction;
+
+    // Normalize deprecated values
+    final normalized = switch (preferred) {
+      // ignore: deprecated_member_use_from_same_package
+      SmartAutoSuggestBoxDirection.below => SmartAutoSuggestBoxDirection.bottom,
+      // ignore: deprecated_member_use_from_same_package
+      SmartAutoSuggestBoxDirection.above => SmartAutoSuggestBoxDirection.top,
+      _ => preferred,
+    };
+
+    final spaceBelow =
+        screenSize.height - viewPadding.bottom - globalOffset.dy - boxSize.height;
+    final spaceAbove = globalOffset.dy - viewPadding.top;
+    final spaceEnd = screenSize.width - globalOffset.dx - boxSize.width;
+    final spaceStart = globalOffset.dx;
+
+    const minSpace = 100.0;
+
+    switch (normalized) {
+      case SmartAutoSuggestBoxDirection.bottom:
+        if (spaceBelow >= minSpace) return SmartAutoSuggestBoxDirection.bottom;
+        if (spaceAbove > spaceBelow) return SmartAutoSuggestBoxDirection.top;
+        return SmartAutoSuggestBoxDirection.bottom;
+
+      case SmartAutoSuggestBoxDirection.top:
+        if (spaceAbove >= minSpace) return SmartAutoSuggestBoxDirection.top;
+        if (spaceBelow > spaceAbove) return SmartAutoSuggestBoxDirection.bottom;
+        return SmartAutoSuggestBoxDirection.top;
+
+      case SmartAutoSuggestBoxDirection.start:
+        if (spaceStart >= minSpace) return SmartAutoSuggestBoxDirection.start;
+        if (spaceEnd > spaceStart) return SmartAutoSuggestBoxDirection.end;
+        return SmartAutoSuggestBoxDirection.start;
+
+      case SmartAutoSuggestBoxDirection.end:
+        if (spaceEnd >= minSpace) return SmartAutoSuggestBoxDirection.end;
+        if (spaceStart > spaceEnd) return SmartAutoSuggestBoxDirection.start;
+        return SmartAutoSuggestBoxDirection.end;
+
+      default:
+        return SmartAutoSuggestBoxDirection.bottom;
+    }
+  }
+
   void _insertOverlay() {
     final overlayState = Overlay.of(
       context,
@@ -547,40 +617,88 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
         if (boxContext == null) return const SizedBox.shrink();
         final box = boxContext.findRenderObject() as RenderBox;
 
-        // ancestor is not necessary here because we are not dealing with routes, but overlays
         final globalOffset = box.localToGlobal(
           Offset.zero,
           ancestor: overlayState.context.findRenderObject(),
         );
 
-        final screenHeight =
-            MediaQuery.sizeOf(context).height -
-            MediaQuery.viewPaddingOf(context).bottom;
-        final overlayY = globalOffset.dy + box.size.height;
-        final maxHeight = (screenHeight - overlayY).clamp(
-          0.0,
-          widget.maxPopupHeight,
+        final screenSize = MediaQuery.sizeOf(context);
+        final viewPadding = MediaQuery.viewPaddingOf(context);
+        final isRtl = Directionality.of(context) == TextDirection.rtl;
+
+        final resolvedDirection = _resolveDirection(
+          globalOffset: globalOffset,
+          boxSize: box.size,
+          screenSize: screenSize,
+          viewPadding: viewPadding,
         );
 
+        final bool isVertical =
+            resolvedDirection == SmartAutoSuggestBoxDirection.bottom ||
+            resolvedDirection == SmartAutoSuggestBoxDirection.top;
+
+        // Calculate max height based on resolved direction
+        double maxHeight;
+        double overlayWidth;
+        Alignment targetAnchor;
+        Alignment followerAnchor;
+        Offset offset;
+
+        if (isVertical) {
+          overlayWidth = box.size.width;
+          if (resolvedDirection == SmartAutoSuggestBoxDirection.bottom) {
+            final spaceBelow =
+                screenSize.height - viewPadding.bottom - globalOffset.dy - box.size.height;
+            maxHeight = spaceBelow.clamp(0.0, widget.maxPopupHeight);
+            targetAnchor = Alignment.bottomCenter;
+            followerAnchor = Alignment.topCenter;
+            offset = widget.offset ?? const Offset(0, 0.8);
+          } else {
+            final spaceAbove = globalOffset.dy - viewPadding.top;
+            maxHeight = spaceAbove.clamp(0.0, widget.maxPopupHeight);
+            targetAnchor = Alignment.topCenter;
+            followerAnchor = Alignment.bottomCenter;
+            offset = widget.offset ?? const Offset(0, -0.8);
+          }
+        } else {
+          // Horizontal: start or end
+          final spaceVertical =
+              screenSize.height - viewPadding.bottom - globalOffset.dy;
+          maxHeight = spaceVertical.clamp(0.0, widget.maxPopupHeight);
+
+          if (resolvedDirection == SmartAutoSuggestBoxDirection.start) {
+            final spaceStart = isRtl
+                ? screenSize.width - globalOffset.dx - box.size.width
+                : globalOffset.dx;
+            overlayWidth = spaceStart.clamp(100.0, box.size.width);
+            targetAnchor = isRtl ? Alignment.centerRight : Alignment.centerLeft;
+            followerAnchor = isRtl ? Alignment.centerLeft : Alignment.centerRight;
+            offset = widget.offset ?? Offset(isRtl ? 0.8 : -0.8, 0);
+          } else {
+            final spaceEnd = isRtl
+                ? globalOffset.dx
+                : screenSize.width - globalOffset.dx - box.size.width;
+            overlayWidth = spaceEnd.clamp(100.0, box.size.width);
+            targetAnchor = isRtl ? Alignment.centerLeft : Alignment.centerRight;
+            followerAnchor = isRtl ? Alignment.centerRight : Alignment.centerLeft;
+            offset = widget.offset ?? Offset(isRtl ? -0.8 : 0.8, 0);
+          }
+        }
+
         Widget child = PositionedDirectional(
-          width: box.size.width,
+          width: overlayWidth,
           child: CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
-            targetAnchor: widget.direction == SmartAutoSuggestBoxDirection.below
-                ? Alignment.bottomCenter
-                : Alignment.topCenter,
-            followerAnchor:
-                widget.direction == SmartAutoSuggestBoxDirection.below
-                ? Alignment.topCenter
-                : Alignment.bottomCenter,
-            offset: widget.offset ?? const Offset(0, 0.8),
+            targetAnchor: targetAnchor,
+            followerAnchor: followerAnchor,
+            offset: offset,
             child: SizedBox(
-              width: box.size.width,
+              width: overlayWidth,
               child: _SmartAutoSuggestBoxOverlay<T>(
                 waitingBuilder: widget.waitingBuilder,
                 tileHeight: widget.tileHeight,
-                direction: widget.direction,
+                direction: resolvedDirection,
                 isLoading: isLoading,
                 maxHeight: maxHeight,
                 node: _overlayNode,
@@ -602,11 +720,6 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
                     item.label,
                     FluentTextChangedReason.suggestionChosen,
                   );
-
-                  // After selected, the overlay is dismissed and the text box is
-                  // unfocused
-                  // _focusNode.unfocus();
-                  // dismissOverlay();
                 },
                 noResultsFoundBuilder: widget.noResultsFoundBuilder,
                 onNoResultsFound: widget.onNoResultsFound == null
@@ -641,10 +754,6 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>> {
             ),
           ),
         );
-
-        // if (DisableAcrylic.of(context) != null) {
-        //   child = DisableAcrylic(child: child);
-        // }
 
         return child;
       },
@@ -864,7 +973,7 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
     this.onNoResultsFound,
     this.tileHeight = kComboBoxItemHeight,
     this.waitingBuilder,
-    this.direction = SmartAutoSuggestBoxDirection.below,
+    this.direction = SmartAutoSuggestBoxDirection.bottom,
   });
 
   final ValueNotifier<Set<SmartAutoSuggestBoxItem<T>>> items;
@@ -924,6 +1033,44 @@ class _SmartAutoSuggestBoxOverlayState<T>
     super.dispose();
   }
 
+  EdgeInsets _resolveMargin(SmartAutoSuggestBoxDirection direction) {
+    switch (direction) {
+      // ignore: deprecated_member_use_from_same_package
+      case SmartAutoSuggestBoxDirection.above:
+      case SmartAutoSuggestBoxDirection.top:
+        return const EdgeInsets.only(left: 8, right: 8, bottom: 8);
+      case SmartAutoSuggestBoxDirection.start:
+        return const EdgeInsets.only(top: 8, bottom: 8, right: 8);
+      case SmartAutoSuggestBoxDirection.end:
+        return const EdgeInsets.only(top: 8, bottom: 8, left: 8);
+      // ignore: deprecated_member_use_from_same_package
+      case SmartAutoSuggestBoxDirection.below:
+      case SmartAutoSuggestBoxDirection.bottom:
+      default:
+        return const EdgeInsets.only(left: 8, right: 8);
+    }
+  }
+
+  BorderRadius _resolveBorderRadius(SmartAutoSuggestBoxDirection direction) {
+    const r = Radius.circular(4.0);
+    switch (direction) {
+      // ignore: deprecated_member_use_from_same_package
+      case SmartAutoSuggestBoxDirection.below:
+      case SmartAutoSuggestBoxDirection.bottom:
+        return const BorderRadius.vertical(bottom: r);
+      // ignore: deprecated_member_use_from_same_package
+      case SmartAutoSuggestBoxDirection.above:
+      case SmartAutoSuggestBoxDirection.top:
+        return const BorderRadius.vertical(top: r);
+      case SmartAutoSuggestBoxDirection.start:
+        return const BorderRadius.horizontal(left: r);
+      case SmartAutoSuggestBoxDirection.end:
+        return const BorderRadius.horizontal(right: r);
+      default:
+        return const BorderRadius.vertical(bottom: r);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -934,26 +1081,13 @@ class _SmartAutoSuggestBoxOverlayState<T>
       child: FocusScope(
         node: widget.node,
         child: Container(
-          margin: EdgeInsets.only(
-            left: 8,
-            right: 8,
-            bottom: widget.direction == SmartAutoSuggestBoxDirection.above
-                ? 8
-                : 0,
-          ),
+          margin: _resolveMargin(widget.direction),
           constraints: BoxConstraints(maxHeight: widget.maxHeight),
           clipBehavior: Clip.antiAlias,
           decoration: ShapeDecoration(
             color: theme.colorScheme.surface,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(
-                bottom: widget.direction == SmartAutoSuggestBoxDirection.below
-                    ? Radius.circular(4.0)
-                    : Radius.zero,
-                top: widget.direction == SmartAutoSuggestBoxDirection.above
-                    ? Radius.circular(4.0)
-                    : Radius.zero,
-              ),
+              borderRadius: _resolveBorderRadius(widget.direction),
             ),
             shadows: [
               BoxShadow(
@@ -1044,7 +1178,10 @@ class _SmartAutoSuggestBoxOverlayState<T>
                               mainAxisSize: MainAxisSize.min,
                               children:
                                   widget.direction ==
-                                      SmartAutoSuggestBoxDirection.above
+                                          SmartAutoSuggestBoxDirection.top ||
+                                      // ignore: deprecated_member_use_from_same_package
+                                      widget.direction ==
+                                          SmartAutoSuggestBoxDirection.above
                                   ? children.reversed.toList()
                                   : children,
                             );
