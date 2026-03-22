@@ -437,106 +437,117 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
         }
         return KeyEventResult.ignored;
       },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Text field ──────────────────────────────────────────────────
-          if (_isForm)
-            TextFormField(
-              key: _textBoxKey,
-              controller: _controller,
-              focusNode: _focusNode,
-              autofocus: widget.autofocus,
-              onChanged: _onChanged,
-              onFieldSubmitted: (_) => _onSubmitted(_localItems.toList()),
-              style: widget.style,
-              decoration: widget.decoration,
-              cursorColor: widget.cursorColor,
-              cursorHeight: widget.cursorHeight,
-              cursorRadius: widget.cursorRadius,
-              cursorWidth: widget.cursorWidth,
-              showCursor: widget.showCursor,
-              scrollPadding: widget.scrollPadding,
-              selectionHeightStyle: widget.selectionHeightStyle,
-              selectionWidthStyle: widget.selectionWidthStyle,
-              validator: widget.validator,
-              autovalidateMode: widget.autovalidateMode,
-              textInputAction: widget.textInputAction,
-              keyboardAppearance: widget.keyboardAppearance,
-              enabled: widget.enabled,
-              inputFormatters: widget.inputFormatters,
-              keyboardType: widget.keyboardType,
-              maxLength: widget.maxLength,
-            )
-          else
-            TextField(
-              key: _textBoxKey,
-              controller: _controller,
-              focusNode: _focusNode,
-              autofocus: widget.autofocus,
-              onChanged: _onChanged,
-              onSubmitted: (_) => _onSubmitted(_localItems.toList()),
-              style: widget.style,
-              decoration: widget.decoration,
-              cursorColor: widget.cursorColor,
-              cursorHeight: widget.cursorHeight,
-              cursorRadius: widget.cursorRadius,
-              cursorWidth: widget.cursorWidth,
-              showCursor: widget.showCursor,
-              scrollPadding: widget.scrollPadding,
-              selectionHeightStyle: widget.selectionHeightStyle,
-              selectionWidthStyle: widget.selectionWidthStyle,
-              textInputAction: widget.textInputAction,
-              keyboardAppearance: widget.keyboardAppearance,
-              enabled: widget.enabled,
-              inputFormatters: widget.inputFormatters,
-              keyboardType: widget.keyboardType,
-              maxLength: widget.maxLength,
-            ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final hasBoundedHeight = constraints.maxHeight.isFinite;
+          final effectiveListMaxHeight = hasBoundedHeight
+              ? math.min(widget.listMaxHeight, constraints.maxHeight)
+              : widget.listMaxHeight;
 
-          // ── Inline suggestion list ───────────────────────────────────────
-          if (showList)
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: widget.listMaxHeight),
-              child: _SmartAutoSuggestViewList<T>(
-                items: _items,
-                itemBuilder: widget.itemBuilder,
-                controller: _controller,
-                onSelected: (SmartAutoSuggestItem<T> item) {
-                  item.onSelected?.call();
-                  widget.onSelected?.call(item);
-                  _controller
-                    ..text = item.label
-                    ..selection = TextSelection.collapsed(
-                      offset: item.label.length,
-                    );
-                  widget.onChanged?.call(
-                    item.label,
-                    FluentTextChangedReason.suggestionChosen,
+          final listWidget = ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: effectiveListMaxHeight),
+            child: _SmartAutoSuggestViewList<T>(
+              items: _items,
+              itemBuilder: widget.itemBuilder,
+              controller: _controller,
+              onSelected: (SmartAutoSuggestItem<T> item) {
+                item.onSelected?.call();
+                widget.onSelected?.call(item);
+                _controller
+                  ..text = item.label
+                  ..selection = TextSelection.collapsed(
+                    offset: item.label.length,
                   );
-                  _unselectAll();
-                  setState(() {});
-                },
-                node: _overlayNode,
-                focusStream: _focusStreamController.stream,
-                itemsStream: _dynamicItemsController.stream,
-                sorter: sorter,
-                maxHeight: widget.listMaxHeight,
-                noResultsFoundBuilder: widget.noResultsFoundBuilder,
-                isLoading: isLoading,
-                onNoResultsFound: _buildSearchCallback(),
-                tileHeight: widget.tileHeight,
-                waitingBuilder: widget.waitingBuilder,
-              ),
+                widget.onChanged?.call(
+                  item.label,
+                  FluentTextChangedReason.suggestionChosen,
+                );
+                _unselectAll();
+                setState(() {});
+              },
+              node: _overlayNode,
+              focusStream: _focusStreamController.stream,
+              itemsStream: _dynamicItemsController.stream,
+              sorter: sorter,
+              maxHeight: effectiveListMaxHeight,
+              noResultsFoundBuilder: widget.noResultsFoundBuilder,
+              isLoading: isLoading,
+              onNoResultsFound: _buildSearchCallback(),
+              tileHeight: widget.tileHeight,
+              waitingBuilder: widget.waitingBuilder,
             ),
-        ],
+          );
+
+          return Column(
+            mainAxisSize: hasBoundedHeight
+                ? MainAxisSize.max
+                : MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_isForm)
+                TextFormField(
+                  key: _textBoxKey,
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  autofocus: widget.autofocus,
+                  onChanged: _onChanged,
+                  onFieldSubmitted: (_) => _onSubmitted(_localItems.toList()),
+                  style: widget.style,
+                  decoration: widget.decoration,
+                  cursorColor: widget.cursorColor,
+                  cursorHeight: widget.cursorHeight,
+                  cursorRadius: widget.cursorRadius,
+                  cursorWidth: widget.cursorWidth,
+                  showCursor: widget.showCursor,
+                  scrollPadding: widget.scrollPadding,
+                  selectionHeightStyle: widget.selectionHeightStyle,
+                  selectionWidthStyle: widget.selectionWidthStyle,
+                  validator: widget.validator,
+                  autovalidateMode: widget.autovalidateMode,
+                  textInputAction: widget.textInputAction,
+                  keyboardAppearance: widget.keyboardAppearance,
+                  enabled: widget.enabled,
+                  inputFormatters: widget.inputFormatters,
+                  keyboardType: widget.keyboardType,
+                  maxLength: widget.maxLength,
+                )
+              else
+                TextField(
+                  key: _textBoxKey,
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  autofocus: widget.autofocus,
+                  onChanged: _onChanged,
+                  onSubmitted: (_) => _onSubmitted(_localItems.toList()),
+                  style: widget.style,
+                  decoration: widget.decoration,
+                  cursorColor: widget.cursorColor,
+                  cursorHeight: widget.cursorHeight,
+                  cursorRadius: widget.cursorRadius,
+                  cursorWidth: widget.cursorWidth,
+                  showCursor: widget.showCursor,
+                  scrollPadding: widget.scrollPadding,
+                  selectionHeightStyle: widget.selectionHeightStyle,
+                  selectionWidthStyle: widget.selectionWidthStyle,
+                  textInputAction: widget.textInputAction,
+                  keyboardAppearance: widget.keyboardAppearance,
+                  enabled: widget.enabled,
+                  inputFormatters: widget.inputFormatters,
+                  keyboardType: widget.keyboardType,
+                  maxLength: widget.maxLength,
+                ),
+              if (showList)
+                if (hasBoundedHeight)
+                  Flexible(fit: FlexFit.loose, child: listWidget)
+                else
+                  listWidget,
+            ],
+          );
+        },
       ),
     );
   }
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Private inline list widget
 // ─────────────────────────────────────────────────────────────────────────────

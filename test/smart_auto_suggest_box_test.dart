@@ -170,4 +170,37 @@ void main() {
       expect(scrollController.offset, greaterThan(0));
     },
   );
+
+  testWidgets('SmartAutoSuggestView does not overflow in bounded height', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          SmartAutoSuggestBoxLocalizations.delegate,
+        ],
+        supportedLocales:
+            SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            height: 320,
+            child: SmartAutoSuggestView<String>(
+              dataSource: SmartAutoSuggestDataSource(
+                initialList: (_) => _items(20),
+              ),
+              showListWhenEmpty: true,
+              listMaxHeight: double.infinity,
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
 }
