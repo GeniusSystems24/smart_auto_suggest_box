@@ -1366,42 +1366,47 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                   : children,
                             );
                           } else {
-                            result = ListView.builder(
-                              itemExtent: widget.tileHeight,
+                            result = Scrollbar(
                               controller: scrollController,
-                              key: ValueKey<int>(sortedItems.length),
-                              shrinkWrap: true,
-                              padding: const EdgeInsetsDirectional.only(
-                                bottom: 4.0,
+                              thumbVisibility: true,
+                              child: ListView.builder(
+                                itemExtent: widget.tileHeight,
+                                controller: scrollController,
+                                key: ValueKey<int>(sortedItems.length),
+                                shrinkWrap: true,
+                                padding: const EdgeInsetsDirectional.only(
+                                  bottom: 4.0,
+                                ),
+                                itemCount: sortedItems.length,
+                                itemBuilder: (context, index) {
+                                  final item = sortedItems.elementAt(index);
+                                  return widget.itemBuilder?.call(
+                                        context,
+                                        item,
+                                      ) ??
+                                      _SmartAutoSuggestBoxOverlayTile(
+                                        subtitle: null,
+                                        title: DefaultTextStyle.merge(
+                                          child:
+                                              item.child ?? Text(item.label),
+                                          style: item.enabled
+                                              ? null
+                                              : TextStyle(
+                                                  color: theme
+                                                      .colorScheme.outline,
+                                                ),
+                                        ),
+                                        semanticLabel:
+                                            item.semanticLabel ?? item.label,
+                                        selected:
+                                            item._selected ||
+                                            widget.node.hasFocus,
+                                        onSelected: item.enabled
+                                            ? () => widget.onSelected(item)
+                                            : null,
+                                      );
+                                },
                               ),
-                              itemCount: sortedItems.length,
-                              itemBuilder: (context, index) {
-                                final item = sortedItems.elementAt(index);
-                                return widget.itemBuilder?.call(
-                                      context,
-                                      item,
-                                    ) ??
-                                    _SmartAutoSuggestBoxOverlayTile(
-                                      subtitle: null,
-                                      title: DefaultTextStyle.merge(
-                                        child: item.child ?? Text(item.label),
-                                        style: item.enabled
-                                            ? null
-                                            : TextStyle(
-                                                color:
-                                                    theme.colorScheme.outline,
-                                              ),
-                                      ),
-                                      semanticLabel:
-                                          item.semanticLabel ?? item.label,
-                                      selected:
-                                          item._selected ||
-                                          widget.node.hasFocus,
-                                      onSelected: item.enabled
-                                          ? () => widget.onSelected(item)
-                                          : null,
-                                    );
-                              },
                             );
                           }
                           return result;
@@ -2194,33 +2199,40 @@ class _SmartAutoSuggestViewListState<T>
                       );
                     }
 
-                    return ListView.builder(
-                      itemExtent: widget.tileHeight,
+                    return Scrollbar(
                       controller: _scrollController,
-                      key: ValueKey<int>(sortedItems.length),
-                      shrinkWrap: true,
-                      padding: const EdgeInsetsDirectional.only(bottom: 4.0),
-                      itemCount: sortedItems.length,
-                      itemBuilder: (context, index) {
-                        final item = sortedItems.elementAt(index);
-                        return widget.itemBuilder?.call(context, item) ??
-                            _SmartAutoSuggestBoxOverlayTile(
-                              subtitle: null,
-                              title: DefaultTextStyle.merge(
-                                child: item.child ?? Text(item.label),
-                                style: item.enabled
-                                    ? null
-                                    : TextStyle(
-                                        color: theme.colorScheme.outline,
-                                      ),
-                              ),
-                              semanticLabel: item.semanticLabel ?? item.label,
-                              selected: item._selected || widget.node.hasFocus,
-                              onSelected: item.enabled
-                                  ? () => widget.onSelected(item)
-                                  : null,
-                            );
-                      },
+                      thumbVisibility: true,
+                      child: ListView.builder(
+                        itemExtent: widget.tileHeight,
+                        controller: _scrollController,
+                        key: ValueKey<int>(sortedItems.length),
+                        shrinkWrap: true,
+                        padding:
+                            const EdgeInsetsDirectional.only(bottom: 4.0),
+                        itemCount: sortedItems.length,
+                        itemBuilder: (context, index) {
+                          final item = sortedItems.elementAt(index);
+                          return widget.itemBuilder?.call(context, item) ??
+                              _SmartAutoSuggestBoxOverlayTile(
+                                subtitle: null,
+                                title: DefaultTextStyle.merge(
+                                  child: item.child ?? Text(item.label),
+                                  style: item.enabled
+                                      ? null
+                                      : TextStyle(
+                                          color: theme.colorScheme.outline,
+                                        ),
+                                ),
+                                semanticLabel:
+                                    item.semanticLabel ?? item.label,
+                                selected:
+                                    item._selected || widget.node.hasFocus,
+                                onSelected: item.enabled
+                                    ? () => widget.onSelected(item)
+                                    : null,
+                              );
+                        },
+                      ),
                     );
                   },
                 );

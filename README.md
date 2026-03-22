@@ -19,7 +19,9 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 - **Configurable debounce** — control search trigger timing
 - **Keyboard navigation** — ↑ ↓ Enter Escape
 - **Form support** — `SmartAutoSuggestBox.form()` and `SmartAutoSuggestView.form()` with validation
+- **Scrollbar** — visible scrollbar thumb when the suggestion list overflows
 - **Custom builders** — item, no-results, loading state
+- **BottomSheet ready** — `SmartAutoSuggestView` works inside `showModalBottomSheet`
 - **Internationalization** — built-in i18n
 
 ## Getting Started
@@ -154,6 +156,75 @@ SmartAutoSuggestBox<String>(
 | `top`     | Above the text field. Falls back to `bottom`. |
 | `start`   | Start side (left in LTR). Falls back to `end`. |
 | `end`     | End side (right in LTR). Falls back to `start`. |
+
+### SmartAutoSuggestView in BottomSheet
+
+```dart
+showModalBottomSheet(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  builder: (context) => DraggableScrollableSheet(
+    expand: false,
+    builder: (context, scrollController) => Column(
+      children: [
+        // ... drag handle, title ...
+        Expanded(
+          child: SmartAutoSuggestView<String>(
+            dataSource: SmartAutoSuggestDataSource(
+              initialList: (context) => myItems,
+            ),
+            showListWhenEmpty: true,
+            listMaxHeight: double.infinity,
+            onSelected: (item) => Navigator.pop(context),
+          ),
+        ),
+      ],
+    ),
+  ),
+);
+```
+
+### Custom No-Results View
+
+```dart
+SmartAutoSuggestBox<String>(
+  dataSource: SmartAutoSuggestDataSource(initialList: (c) => items),
+  noResultsFoundBuilder: (context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.search_off, size: 40),
+        const Text('No matching results'),
+        OutlinedButton.icon(
+          onPressed: () { /* add new item */ },
+          icon: const Icon(Icons.add),
+          label: const Text('Add new'),
+        ),
+      ],
+    );
+  },
+  onSelected: (item) {},
+);
+```
+
+### Custom Item Builder
+
+```dart
+SmartAutoSuggestBox<String>(
+  dataSource: SmartAutoSuggestDataSource(initialList: (c) => items),
+  tileHeight: 72,
+  itemBuilder: (context, item) {
+    return ListTile(
+      leading: CircleAvatar(child: Text(item.label[0])),
+      title: Text(item.label),
+      subtitle: Text('Value: ${item.value}'),
+      trailing: Chip(label: Text('${item.label.length}')),
+    );
+  },
+  onSelected: (item) {},
+);
+```
 
 ### Form Validation
 

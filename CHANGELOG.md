@@ -8,6 +8,8 @@
   suggestion list rendered directly below it in the normal widget tree — no
   floating overlay. Ideal for search screens, filter panels, and embedded search
   UIs. Shares the same `SmartAutoSuggestDataSource` API as `SmartAutoSuggestBox`.
+* **Scrollbar**: Both `SmartAutoSuggestBox` and `SmartAutoSuggestView` now show a
+  visible scrollbar thumb when the suggestion list overflows.
   * `listMaxHeight`: maximum height of the inline suggestion list (default 380px).
   * `showListWhenEmpty`: whether to display the list when the text field is empty (default `true`).
   * Supports `.form` constructor with `validator` and `autovalidateMode`.
@@ -32,8 +34,13 @@
 ### Example
 
 * Updated example app with a bottom `NavigationBar` switching between
-  `SmartAutoSuggestBox` (floating overlay) and `SmartAutoSuggestView` (inline list) demos.
+  `SmartAutoSuggestBox` (floating overlay), `SmartAutoSuggestView` (inline list),
+  and Advanced Examples demos.
 * Updated all example code to use the new type names.
+* **BottomSheet example**: `SmartAutoSuggestView` inside a `showModalBottomSheet`.
+* **Custom no-results**: Rich custom widget with icon, message, and action button.
+* **Custom item builder**: Tiles with leading emoji avatar, subtitle, and trailing badge.
+* **Custom loading**: Shimmer-style placeholder while server search is in progress.
 
 ## 0.1.0
 
