@@ -29,7 +29,7 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.5.0
+  smart_auto_suggest_box: ^0.6.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -263,6 +263,35 @@ SmartAutoSuggestView.form(
   onSelected: (item) {},
 );
 ```
+
+## SmartAutoSuggestController
+
+Use `SmartAutoSuggestController<T>` to access the text input and observe the
+selected item from outside the widget:
+
+```dart
+final controller = SmartAutoSuggestController<String>();
+
+// Pass to widget
+SmartAutoSuggestBox<String>(
+  smartController: controller,
+  dataSource: SmartAutoSuggestDataSource(...),
+)
+
+// Listen to selection changes
+controller.selectedItem.addListener(() {
+  print('Selected: ${controller.selectedItem.value?.label}');
+});
+
+// Clear programmatically
+controller.clearSelection();
+
+// Don't forget to dispose
+controller.dispose();
+```
+
+> **Note:** The old `controller: TextEditingController?` parameter is
+> deprecated — use `smartController` instead.
 
 ## Selected Item Display
 

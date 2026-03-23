@@ -20,6 +20,22 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
       SmartAutoSuggestBoxDirection.bottom;
   String? _selected;
 
+  final _smartController = SmartAutoSuggestController<String>();
+
+  @override
+  void initState() {
+    super.initState();
+    _smartController.selectedItem.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _smartController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -223,6 +239,57 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
             },
             onSelected: (item) {},
           ),
+          const SizedBox(height: 32),
+
+          // ── 5. SmartAutoSuggestController ────────────────────────────────
+          sectionHeader(
+            context,
+            title: '5. SmartAutoSuggestController',
+            subtitle:
+                'Use a controller to observe the selected item and '
+                'clear it programmatically.',
+          ),
+          const SizedBox(height: 8),
+          SmartAutoSuggestBox<String>(
+            smartController: _smartController,
+            dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: fruitItemBuilder,
+              initialList: (context) => fruits,
+            ),
+            direction: _direction,
+            decoration: const InputDecoration(
+              labelText: 'Search fruits',
+              hintText: 'Select a fruit...',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.search),
+            ),
+            onSelected: (item) {},
+          ),
+          const SizedBox(height: 8),
+          if (_smartController.selectedItem.value != null)
+            Card(
+              child: ListTile(
+                title: Text(
+                  'Selected: ${_smartController.selectedItem.value!.label}',
+                ),
+                subtitle: Text(
+                  'Value: ${_smartController.selectedItem.value!.value}',
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => _smartController.clearSelection(),
+                ),
+              ),
+            )
+          else
+            const Card(
+              child: ListTile(
+                title: Text('No selection'),
+                subtitle: Text(
+                  'Select an item above to see controller state',
+                ),
+              ),
+            ),
           const SizedBox(height: 48),
         ],
       ),

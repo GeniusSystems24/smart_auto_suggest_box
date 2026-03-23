@@ -31,7 +31,8 @@ class SmartAutoSuggestView<T> extends StatefulWidget {
   const SmartAutoSuggestView({
     super.key,
     this.dataSource,
-    this.controller,
+    @Deprecated('Use smartController instead') this.controller,
+    this.smartController,
     this.onChanged,
     this.onSelected,
     this.itemBuilder,
@@ -68,7 +69,8 @@ class SmartAutoSuggestView<T> extends StatefulWidget {
   const SmartAutoSuggestView.form({
     super.key,
     this.dataSource,
-    this.controller,
+    @Deprecated('Use smartController instead') this.controller,
+    this.smartController,
     this.onChanged,
     this.onSelected,
     this.itemBuilder,
@@ -140,7 +142,16 @@ class SmartAutoSuggestView<T> extends StatefulWidget {
   // ── Text field ────────────────────────────────────────────────────────────
 
   /// Controls the text being edited.
+  ///
+  /// Deprecated: Use [smartController] instead.
+  @Deprecated('Use smartController instead')
   final TextEditingController? controller;
+
+  /// A unified controller that provides access to both the text input and the
+  /// currently selected item.
+  ///
+  /// When provided, [controller] is ignored.
+  final SmartAutoSuggestController<T>? smartController;
 
   /// The style to use for the text being edited.
   final TextStyle? style;
@@ -247,6 +258,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
   );
 
   late TextEditingController _controller;
+  late SmartAutoSuggestController<T>? _ownedSmartController;
   final FocusScopeNode _overlayNode = FocusScopeNode();
   final _focusStreamController = StreamController<int>.broadcast();
   final _dynamicItemsController =
@@ -254,6 +266,10 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
 
   SmartAutoSuggestSorter<T> get sorter =>
       widget.sorter ?? widget.defaultItemSorter;
+
+  /// The effective [SmartAutoSuggestController] for this widget.
+  SmartAutoSuggestController<T>? get _smartController =>
+      widget.smartController ?? _ownedSmartController;
 
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
   String lastSearchLoaded = '';
@@ -270,7 +286,19 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? TextEditingController();
+
+    // Resolve controller: smartController > controller > create new
+    if (widget.smartController != null) {
+      _ownedSmartController = null;
+      _controller = widget.smartController!.textController;
+    } else if (widget.controller != null) {
+      _ownedSmartController = null;
+      _controller = widget.controller!;
+    } else {
+      _ownedSmartController = SmartAutoSuggestController<T>();
+      _controller = _ownedSmartController!.textController;
+    }
+
     _items = ValueNotifier(<SmartAutoSuggestItem<T>>{});
     _localItems = <SmartAutoSuggestItem<T>>{};
     isLoading.value = false;
@@ -299,7 +327,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
     _focusStreamController.close();
     _dynamicItemsController.close();
     _unselectAll();
-    if (widget.controller == null) _controller.dispose();
+    _ownedSmartController?.dispose();
     if (widget.focusNode == null) _focusNode.dispose();
     super.dispose();
   }
@@ -310,9 +338,24 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
       if (oldWidget.focusNode == null) _focusNode.dispose();
       _focusNode = widget.focusNode ?? FocusNode();
     }
-    if (widget.controller != oldWidget.controller) {
-      if (oldWidget.controller == null) _controller.dispose();
-      _controller = widget.controller ?? TextEditingController();
+    // Handle smartController / controller changes
+    if (widget.smartController != oldWidget.smartController ||
+        widget.controller != oldWidget.controller) {
+      _controller.removeListener(_handleTextChanged);
+      _ownedSmartController?.dispose();
+
+      if (widget.smartController != null) {
+        _ownedSmartController = null;
+        _controller = widget.smartController!.textController;
+      } else if (widget.controller != null) {
+        _ownedSmartController = null;
+        _controller = widget.controller!;
+      } else {
+        _ownedSmartController = SmartAutoSuggestController<T>();
+        _controller = _ownedSmartController!.textController;
+      }
+
+      _controller.addListener(_handleTextChanged);
     }
     if (widget.dataSource != oldWidget.dataSource &&
         widget.dataSource?.initialList != null) {
@@ -405,7 +448,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
     final item = localItemsList[idx];
     widget.onSelected?.call(item);
     item.onSelected?.call();
-    _controller.text = item.label;
+    _smartController?.select(item);
     widget.onChanged?.call(
       _controller.text,
       FluentTextChangedReason.suggestionChosen,
@@ -470,11 +513,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
               onSelected: (SmartAutoSuggestItem<T> item) {
                 item.onSelected?.call();
                 widget.onSelected?.call(item);
-                _controller
-                  ..text = item.label
-                  ..selection = TextSelection.collapsed(
-                    offset: item.label.length,
-                  );
+                _smartController?.select(item);
                 widget.onChanged?.call(
                   item.label,
                   FluentTextChangedReason.suggestionChosen,

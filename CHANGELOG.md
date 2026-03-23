@@ -1,5 +1,30 @@
 # ChangeLog
 
+## 0.6.0
+
+### Features
+
+* **`SmartAutoSuggestController<T>`** — new unified controller that wraps:
+  * `textController` (`TextEditingController`) — for text input
+  * `selectedItem` (`ValueNotifier<SmartAutoSuggestItem<T>?>`) — for observing
+    the currently selected item
+  * `select(item)` — sets the selected item and updates the text field
+  * `clearSelection()` — clears both selection and text
+  * `dispose()` — releases resources
+
+* Both `SmartAutoSuggestBox` and `SmartAutoSuggestView` accept an optional
+  `smartController` parameter.
+
+### Deprecations
+
+* `controller` (`TextEditingController?`) parameter is deprecated on both
+  widgets — use `smartController` instead.
+
+### Example
+
+* Added **"SmartAutoSuggestController"** demo section showing how to observe
+  selection state and clear it programmatically.
+
 ## 0.5.0
 
 ### Features

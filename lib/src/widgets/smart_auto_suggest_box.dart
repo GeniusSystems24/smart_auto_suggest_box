@@ -23,7 +23,8 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     @Deprecated('Use dataSource with initialList instead')
     List<SmartAutoSuggestItem<T>> items = const [],
     this.dataSource,
-    this.controller,
+    @Deprecated('Use smartController instead') this.controller,
+    this.smartController,
     this.onChanged,
     this.onSelected,
     this.onOverlayVisibilityChanged,
@@ -71,7 +72,8 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     @Deprecated('Use dataSource with initialList instead')
     List<SmartAutoSuggestItem<T>> items = const [],
     this.dataSource,
-    this.controller,
+    @Deprecated('Use smartController instead') this.controller,
+    this.smartController,
     this.onChanged,
     this.onSelected,
     this.onOverlayVisibilityChanged,
@@ -159,7 +161,16 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
   onNoResultsFound;
 
   /// The controller used to have control over what to show on the [TextBox].
+  ///
+  /// Deprecated: Use [smartController] instead.
+  @Deprecated('Use smartController instead')
   final TextEditingController? controller;
+
+  /// A unified controller that provides access to both the text input and the
+  /// currently selected item.
+  ///
+  /// When provided, [controller] is ignored.
+  final SmartAutoSuggestController<T>? smartController;
 
   /// Called when the text is updated
   final OnChangeSmartAutoSuggestBox? onChanged;
@@ -355,6 +366,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   );
 
   late TextEditingController _controller;
+  late SmartAutoSuggestController<T>? _ownedSmartController;
   final FocusScopeNode _overlayNode = FocusScopeNode();
   final _focusStreamController = StreamController<int>.broadcast();
   final _dynamicItemsController =
@@ -362,6 +374,10 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
 
   SmartAutoSuggestSorter<T> get sorter =>
       widget.sorter ?? widget.defaultItemSorter;
+
+  /// The effective [SmartAutoSuggestController] for this widget.
+  SmartAutoSuggestController<T>? get _smartController =>
+      widget.smartController ?? _ownedSmartController;
 
   /// The size of the text box.
   ///
@@ -378,13 +394,15 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   /// The currently selected item when [SmartAutoSuggestBox.selectedItemBuilder]
   /// is provided. When non-null, the custom widget is shown instead of the
   /// [TextField].
-  SmartAutoSuggestItem<T>? _selectedItem;
+  SmartAutoSuggestItem<T>? get _selectedItem =>
+      _smartController?.selectedItem.value;
+  set _selectedItem(SmartAutoSuggestItem<T>? value) =>
+      _smartController?.selectedItem.value = value;
 
   /// Clears the current selection and shows the [TextField] again.
   void clearSelection() {
     if (_selectedItem == null) return;
-    _selectedItem = null;
-    _controller.clear();
+    _smartController?.clearSelection();
     widget.onChanged?.call('', FluentTextChangedReason.cleared);
     setState(() {});
   }
@@ -398,7 +416,20 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _controller = widget.controller ?? TextEditingController();
+
+    // Resolve controller: smartController > controller > create new
+    if (widget.smartController != null) {
+      _ownedSmartController = null;
+      _controller = widget.smartController!.textController;
+    } else if (widget.controller != null) {
+      _ownedSmartController = null;
+      _controller = widget.controller!;
+    } else {
+      _ownedSmartController = SmartAutoSuggestController<T>();
+      _controller = _ownedSmartController!.textController;
+    }
+
+    _smartController?.selectedItem.addListener(_onSelectedItemChanged);
     isLoading.value = false;
 
     _controller.addListener(_handleTextChanged);
@@ -427,19 +458,28 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     });
   }
 
+  void _onSelectedItemChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _debounceTimer?.cancel();
+    _smartController?.selectedItem.removeListener(_onSelectedItemChanged);
     _focusNode.removeListener(_handleFocusChanged);
     _controller.removeListener(_handleTextChanged);
     _focusStreamController.close();
     _dynamicItemsController.close();
     _unselectAll();
 
-    // If the TextEditingController and FocusNode objects are created locally,
-    // we must dispose them.
-    if (widget.controller == null) _controller.dispose();
+    // Dispose internally-created controller/focus node
+    _ownedSmartController?.dispose();
+    if (widget.smartController == null && widget.controller == null) {
+      // already disposed via _ownedSmartController
+    } else if (widget.smartController == null && widget.controller == null) {
+      _controller.dispose();
+    }
     if (widget.focusNode == null) _focusNode.dispose();
 
     super.dispose();
@@ -455,17 +495,32 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   @override
   void didUpdateWidget(covariant SmartAutoSuggestBox<T> oldWidget) {
     {
-      // if the focusNode or controller objects were changed, we must reflect the
-      // changes here. This is mostly used for a good dev-experience with hot
-      // reload, but can also be used to create fancy focus effects
       if (widget.focusNode != oldWidget.focusNode) {
         if (oldWidget.focusNode == null) _focusNode.dispose();
         _focusNode = widget.focusNode ?? FocusNode();
       }
 
-      if (widget.controller != oldWidget.controller) {
-        if (oldWidget.controller == null) _controller.dispose();
-        _controller = widget.controller ?? TextEditingController();
+      // Handle smartController / controller changes
+      if (widget.smartController != oldWidget.smartController ||
+          widget.controller != oldWidget.controller) {
+        _controller.removeListener(_handleTextChanged);
+        oldWidget.smartController?.selectedItem
+            .removeListener(_onSelectedItemChanged);
+        _ownedSmartController?.dispose();
+
+        if (widget.smartController != null) {
+          _ownedSmartController = null;
+          _controller = widget.smartController!.textController;
+        } else if (widget.controller != null) {
+          _ownedSmartController = null;
+          _controller = widget.controller!;
+        } else {
+          _ownedSmartController = SmartAutoSuggestController<T>();
+          _controller = _ownedSmartController!.textController;
+        }
+
+        _controller.addListener(_handleTextChanged);
+        _smartController?.selectedItem.addListener(_onSelectedItemChanged);
       }
     }
 
@@ -889,18 +944,11 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                 onSelected: (SmartAutoSuggestItem<T> item) {
                   item.onSelected?.call();
                   widget.onSelected?.call(item);
-                  _controller
-                    ..text = item.label
-                    ..selection = TextSelection.collapsed(
-                      offset: item.label.length,
-                    );
+                  _smartController?.select(item);
                   widget.onChanged?.call(
                     item.label,
                     FluentTextChangedReason.suggestionChosen,
                   );
-                  if (widget.selectedItemBuilder != null) {
-                    setState(() => _selectedItem = item);
-                  }
                 },
                 noResultsFoundBuilder: widget.noResultsFoundBuilder,
                 onNoResultsFound: _buildSearchCallback(),
@@ -955,7 +1003,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     widget.onSelected?.call(item);
     item.onSelected?.call();
 
-    _controller.text = item.label;
+    _smartController?.select(item);
     widget.onChanged?.call(
       _controller.text,
       FluentTextChangedReason.suggestionChosen,
@@ -1045,10 +1093,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
             if (widget.selectedItemBuilder != null && _selectedItem != null) {
               return GestureDetector(
                 onTap: () {
-                  _selectedItem = null;
-                  _controller.clear();
-                  widget.onChanged?.call('', FluentTextChangedReason.cleared);
-                  setState(() {});
+                  clearSelection();
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _focusNode.requestFocus();
                   });

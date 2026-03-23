@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+part 'smart_auto_suggest_controller.dart';
 part 'smart_auto_suggest_data_source.dart';
 part 'smart_auto_suggest_item.dart';
 
