@@ -196,29 +196,28 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
             ),
             selectedItemBuilder: (context, item) {
               final emoji = fruitEmojis[item.value] ?? '';
-              return InputDecorator(
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
+              return Card(
+                margin: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Chip(
-                      avatar: Text(emoji, style: const TextStyle(fontSize: 18)),
-                      label: Text(item.label),
-                      deleteIcon: const Icon(Icons.close, size: 18),
-                      onDeleted: () {},
-                    ),
-                    const Spacer(),
-                    Icon(
-                      Icons.edit,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                  ],
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    child: Text(emoji, style: const TextStyle(fontSize: 18)),
+                  ),
+                  title: Text(item.label),
+                  trailing: Icon(
+                    Icons.edit,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  // onTap: () {},
                 ),
               );
             },
