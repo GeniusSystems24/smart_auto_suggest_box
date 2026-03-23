@@ -58,6 +58,7 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.maxLength,
     this.offset,
     this.theme,
+    this.selectedItemBuilder,
   }) : autovalidateMode = AutovalidateMode.disabled,
        validator = null,
        items = dataSource != null
@@ -107,6 +108,7 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.maxLength,
     this.offset,
     this.theme,
+    this.selectedItemBuilder,
   }) : items = dataSource != null
            ? ValueNotifier(<SmartAutoSuggestItem<T>>{})
            : ValueNotifier(items.toSet());
@@ -116,6 +118,17 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
   /// If null, the widget will use [SmartAutoSuggestTheme] from the nearest
   /// [Theme], or fall back to system defaults.
   final SmartAutoSuggestTheme? theme;
+
+  /// Builder for displaying the selected item as a custom widget.
+  ///
+  /// When provided and an item is selected, this widget replaces the
+  /// [TextField]. Tapping the widget dismisses it and shows the [TextField]
+  /// again for a new search.
+  ///
+  /// When `null` (default), the selected item's label is placed into the
+  /// [TextField] as plain text (the classic behavior).
+  final Widget Function(BuildContext context, SmartAutoSuggestItem<T> item)?
+      selectedItemBuilder;
 
   /// offset: const Offset(0, 0.8),
   /// Creates a fluent-styled auto suggest box.
@@ -362,6 +375,20 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
 
   late Set<SmartAutoSuggestItem<T>> _localItems;
 
+  /// The currently selected item when [SmartAutoSuggestBox.selectedItemBuilder]
+  /// is provided. When non-null, the custom widget is shown instead of the
+  /// [TextField].
+  SmartAutoSuggestItem<T>? _selectedItem;
+
+  /// Clears the current selection and shows the [TextField] again.
+  void clearSelection() {
+    if (_selectedItem == null) return;
+    _selectedItem = null;
+    _controller.clear();
+    widget.onChanged?.call('', FluentTextChangedReason.cleared);
+    setState(() {});
+  }
+
   void _updateLocalItems() {
     if (!mounted) return;
     setState(() => _localItems = sorter(_controller.text, widget.items.value));
@@ -457,6 +484,12 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
       _dynamicItemsController.add(widget.items.value);
     }
 
+    // Clear stale selection if selectedItemBuilder was removed
+    if (widget.selectedItemBuilder == null &&
+        oldWidget.selectedItemBuilder != null) {
+      _selectedItem = null;
+    }
+
     super.didUpdateWidget(oldWidget);
   }
 
@@ -464,7 +497,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     final hasFocus = _focusNode.hasFocus;
     if (!hasFocus) {
       dismissOverlay();
-    } else {
+    } else if (_selectedItem == null) {
       showOverlay();
     }
     setState(() {});
@@ -473,6 +506,11 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   void _handleTextChanged() {
     if (!mounted) return;
     if (_controller.text.length < 2) setState(() {});
+
+    // Clear selected item when text is manually cleared
+    if (_controller.text.isEmpty && _selectedItem != null) {
+      _selectedItem = null;
+    }
 
     _updateLocalItems();
 
@@ -860,6 +898,9 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                     item.label,
                     FluentTextChangedReason.suggestionChosen,
                   );
+                  if (widget.selectedItemBuilder != null) {
+                    setState(() => _selectedItem = item);
+                  }
                 },
                 noResultsFoundBuilder: widget.noResultsFoundBuilder,
                 onNoResultsFound: _buildSearchCallback(),
@@ -998,6 +1039,24 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                       widget.decoration?.suffixIcon ??
                       const Icon(Icons.arrow_drop_down),
                 );
+
+            // When selectedItemBuilder is provided and an item is selected,
+            // show the custom widget instead of the TextField.
+            if (widget.selectedItemBuilder != null && _selectedItem != null) {
+              return GestureDetector(
+                onTap: () {
+                  _selectedItem = null;
+                  _controller.clear();
+                  widget.onChanged?.call('', FluentTextChangedReason.cleared);
+                  setState(() {});
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _focusNode.requestFocus();
+                  });
+                },
+                child: widget.selectedItemBuilder!(context, _selectedItem!),
+              );
+            }
+
             if (isForm) {
               return TextFormField(
                 // onEditingComplete: () => _focusNode.nextFocus(),

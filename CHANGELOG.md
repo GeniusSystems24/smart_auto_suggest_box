@@ -1,5 +1,24 @@
 # ChangeLog
 
+## 0.5.0
+
+### Features
+
+* **`selectedItemBuilder`** — new optional callback on `SmartAutoSuggestBox`
+  that displays a custom widget (e.g. a `Chip`, card, or avatar row) after the
+  user selects an item, replacing the `TextField`.
+  * Tapping the custom widget dismisses it and restores the `TextField` for a
+    new search.
+  * Use `SmartAutoSuggestBoxState.clearSelection()` to clear it
+    programmatically.
+  * When `null` (the default), the classic behavior is preserved — the selected
+    item's label is placed into the `TextField` as plain text.
+
+### Example
+
+* Added **"Selected Item Builder"** demo section in the Box demo tab showing a
+  `Chip` widget after selection.
+
 ## 0.4.0
 
 ### Features

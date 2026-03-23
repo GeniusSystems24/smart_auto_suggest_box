@@ -165,6 +165,65 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
             ),
             onSelected: (item) {},
           ),
+          const SizedBox(height: 32),
+
+          // ── 4. selectedItemBuilder ──────────────────────────────────────
+          sectionHeader(
+            context,
+            title: '4. Selected Item Builder',
+            subtitle:
+                'Shows a custom Chip widget after selection. '
+                'Tap the chip to go back to the text field.',
+          ),
+          const SizedBox(height: 8),
+          SmartAutoSuggestBox<String>(
+            dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: (context, value) => SmartAutoSuggestItem(
+                value: value,
+                label: value[0].toUpperCase() + value.substring(1),
+                child: Text(
+                  '${fruitEmojis[value] ?? ''} ${value[0].toUpperCase() + value.substring(1)}',
+                ),
+              ),
+              initialList: (context) => fruits,
+            ),
+            direction: _direction,
+            decoration: const InputDecoration(
+              labelText: 'Search fruits',
+              hintText: 'Select a fruit...',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.search),
+            ),
+            selectedItemBuilder: (context, item) {
+              final emoji = fruitEmojis[item.value] ?? '';
+              return InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Chip(
+                      avatar: Text(emoji, style: const TextStyle(fontSize: 18)),
+                      label: Text(item.label),
+                      deleteIcon: const Icon(Icons.close, size: 18),
+                      onDeleted: () {},
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.edit,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ],
+                ),
+              );
+            },
+            onSelected: (item) {},
+          ),
           const SizedBox(height: 48),
         ],
       ),

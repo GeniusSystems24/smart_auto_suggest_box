@@ -20,7 +20,7 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 - **Keyboard navigation** — ↑ ↓ Enter Escape
 - **Form support** — `SmartAutoSuggestBox.form()` and `SmartAutoSuggestView.form()` with validation
 - **Scrollbar** — visible scrollbar thumb when the suggestion list overflows
-- **Custom builders** — item, no-results, loading state
+- **Custom builders** — item, no-results, loading state, **selected item display**
 - **Theming** — `SmartAutoSuggestTheme` (`ThemeExtension`) with light/dark defaults
 - **BottomSheet ready** — `SmartAutoSuggestView` works inside `showModalBottomSheet`
 - **Internationalization** — built-in i18n
@@ -29,7 +29,7 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.4.0
+  smart_auto_suggest_box: ^0.5.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -263,6 +263,32 @@ SmartAutoSuggestView.form(
   onSelected: (item) {},
 );
 ```
+
+## Selected Item Display
+
+By default, the selected item's label is placed into the `TextField` as text.
+Use `selectedItemBuilder` to show a custom widget instead:
+
+```dart
+SmartAutoSuggestBox<String>(
+  dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: fruitItemBuilder,
+    initialList: (context) => fruits,
+  ),
+  selectedItemBuilder: (context, item) {
+    return InputDecorator(
+      decoration: const InputDecoration(border: OutlineInputBorder()),
+      child: Chip(
+        label: Text(item.label),
+        onDeleted: () {}, // tap anywhere to dismiss
+      ),
+    );
+  },
+)
+```
+
+Tapping the custom widget clears the selection and restores the `TextField`.
+To clear programmatically, use `SmartAutoSuggestBoxState.clearSelection()`.
 
 ## Theming
 
