@@ -21,6 +21,7 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 - **Form support** — `SmartAutoSuggestBox.form()` and `SmartAutoSuggestView.form()` with validation
 - **Scrollbar** — visible scrollbar thumb when the suggestion list overflows
 - **Custom builders** — item, no-results, loading state
+- **Theming** — `SmartAutoSuggestTheme` (`ThemeExtension`) with light/dark defaults
 - **BottomSheet ready** — `SmartAutoSuggestView` works inside `showModalBottomSheet`
 - **Internationalization** — built-in i18n
 
@@ -28,7 +29,7 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.3.0
+  smart_auto_suggest_box: ^0.4.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -261,6 +262,36 @@ SmartAutoSuggestView.form(
   autovalidateMode: AutovalidateMode.onUserInteraction,
   onSelected: (item) {},
 );
+```
+
+## Theming
+
+Use `SmartAutoSuggestTheme` (a `ThemeExtension`) to customise colours, shadows,
+border radii, text styles, and more.
+
+### Via ThemeData (recommended)
+
+```dart
+MaterialApp(
+  theme: ThemeData.light().copyWith(
+    extensions: [SmartAutoSuggestTheme.light()],
+  ),
+  darkTheme: ThemeData.dark().copyWith(
+    extensions: [SmartAutoSuggestTheme.dark()],
+  ),
+)
+```
+
+### Per-widget override
+
+```dart
+SmartAutoSuggestBox<String>(
+  theme: SmartAutoSuggestTheme.light().copyWith(
+    overlayBorderRadius: BorderRadius.circular(12),
+    selectedTileColor: Colors.amber.shade100,
+  ),
+  // ...
+)
 ```
 
 ## SmartAutoSuggestDataSource API

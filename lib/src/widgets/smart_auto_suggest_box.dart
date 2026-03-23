@@ -57,6 +57,7 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.offset,
+    this.theme,
   }) : autovalidateMode = AutovalidateMode.disabled,
        validator = null,
        items = dataSource != null
@@ -105,9 +106,16 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.offset,
+    this.theme,
   }) : items = dataSource != null
            ? ValueNotifier(<SmartAutoSuggestItem<T>>{})
            : ValueNotifier(items.toSet());
+
+  /// Optional theme override for this widget.
+  ///
+  /// If null, the widget will use [SmartAutoSuggestTheme] from the nearest
+  /// [Theme], or fall back to system defaults.
+  final SmartAutoSuggestTheme? theme;
 
   /// offset: const Offset(0, 0.8),
   /// Creates a fluent-styled auto suggest box.
@@ -827,6 +835,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
             child: SizedBox(
               width: overlayWidth,
               child: _SmartAutoSuggestBoxOverlay<T>(
+                theme: widget.theme,
                 waitingBuilder: widget.waitingBuilder,
                 tileHeight: widget.tileHeight,
                 direction: resolvedDirection,
@@ -1074,12 +1083,14 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
     required this.maxHeight,
     required this.noResultsFoundBuilder,
     required this.isLoading,
+    this.theme,
     this.onNoResultsFound,
     this.tileHeight = kComboBoxItemHeight,
     this.waitingBuilder,
     this.direction = SmartAutoSuggestBoxDirection.bottom,
   });
 
+  final SmartAutoSuggestTheme? theme;
   final ValueNotifier<Set<SmartAutoSuggestItem<T>>> items;
   final SmartAutoSuggestItemBuilder<T>? itemBuilder;
   final TextEditingController controller;
@@ -1137,38 +1148,92 @@ class _SmartAutoSuggestBoxOverlayState<T>
     super.dispose();
   }
 
-  EdgeInsetsGeometry _resolveMargin(SmartAutoSuggestBoxDirection direction) {
+  EdgeInsetsGeometry _resolveMargin(
+      SmartAutoSuggestBoxDirection direction, double margin) {
     switch (direction) {
       case SmartAutoSuggestBoxDirection.top:
-        return const EdgeInsetsDirectional.only(start: 8, end: 8, bottom: 8);
+        return EdgeInsetsDirectional.only(
+            start: margin, end: margin, bottom: margin);
       case SmartAutoSuggestBoxDirection.start:
-        return const EdgeInsetsDirectional.only(top: 8, bottom: 8, end: 8);
+        return EdgeInsetsDirectional.only(
+            top: margin, bottom: margin, end: margin);
       case SmartAutoSuggestBoxDirection.end:
-        return const EdgeInsetsDirectional.only(top: 8, bottom: 8, start: 8);
+        return EdgeInsetsDirectional.only(
+            top: margin, bottom: margin, start: margin);
       case SmartAutoSuggestBoxDirection.bottom:
-        return const EdgeInsetsDirectional.only(start: 8, end: 8, top: 8);
+        return EdgeInsetsDirectional.only(
+            start: margin, end: margin, top: margin);
     }
   }
 
   BorderRadiusGeometry _resolveBorderRadius(
     SmartAutoSuggestBoxDirection direction,
+    BorderRadius radius,
   ) {
-    const r = Radius.circular(4.0);
+    final r = radius.topLeft;
     switch (direction) {
       case SmartAutoSuggestBoxDirection.bottom:
-        return const BorderRadiusDirectional.vertical(bottom: r);
+        return BorderRadiusDirectional.vertical(bottom: r);
       case SmartAutoSuggestBoxDirection.top:
-        return const BorderRadiusDirectional.vertical(top: r);
+        return BorderRadiusDirectional.vertical(top: r);
       case SmartAutoSuggestBoxDirection.start:
-        return const BorderRadiusDirectional.horizontal(end: r);
+        return BorderRadiusDirectional.horizontal(end: r);
       case SmartAutoSuggestBoxDirection.end:
-        return const BorderRadiusDirectional.horizontal(start: r);
+        return BorderRadiusDirectional.horizontal(start: r);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final appTheme = Theme.of(context);
+    final sat = widget.theme ??
+        appTheme.extension<SmartAutoSuggestTheme>();
+
+    final overlayColor = sat?.overlayColor ?? appTheme.colorScheme.surface;
+    final overlayShadows = sat?.overlayShadows ??
+        [
+          BoxShadow(
+            color: appTheme.colorScheme.shadow.withAlpha((255 * .1).toInt()),
+            offset: const Offset(-1, 3),
+            blurRadius: 2.0,
+            spreadRadius: 3.0,
+          ),
+          BoxShadow(
+            color: appTheme.colorScheme.shadow.withAlpha((255 * .15).toInt()),
+            offset: const Offset(1, 3),
+            blurRadius: 2.0,
+            spreadRadius: 3.0,
+          ),
+        ];
+    final overlayBorderRadius =
+        sat?.overlayBorderRadius ?? BorderRadius.circular(4.0);
+    final overlayMargin = sat?.overlayMargin ?? 8.0;
+    final cardColor = sat?.overlayCardColor ?? appTheme.cardTheme.color;
+    final dividerIndent = sat?.dividerIndent ?? 12.0;
+    final loadingStyle =
+        sat?.loadingSubtitleStyle ??
+        TextStyle(fontSize: 14.0, color: appTheme.colorScheme.outline);
+    final noResultsStyle =
+        sat?.noResultsSubtitleStyle ??
+        appTheme.textTheme.bodySmall?.copyWith(
+          color: appTheme.colorScheme.outline,
+        );
+    final progressHeight = sat?.progressIndicatorHeight ?? 4.0;
+    final progressColor = sat?.progressIndicatorColor;
+    final disabledColor = sat?.disabledItemColor ?? appTheme.colorScheme.outline;
+    final tilePadding =
+        sat?.tilePadding ?? const EdgeInsets.only(left: 4, right: 4, top: 4);
+    final tileColor = sat?.tileColor ?? appTheme.colorScheme.surface;
+    final selectedTileColor =
+        sat?.selectedTileColor ?? appTheme.colorScheme.primaryContainer;
+    final selectedTileTextColor =
+        sat?.selectedTileTextColor ?? appTheme.colorScheme.onPrimaryContainer;
+    final tileSubtitleStyle =
+        sat?.tileSubtitleStyle ??
+        appTheme.textTheme.bodySmall?.copyWith(
+          color: appTheme.colorScheme.outline,
+        );
+
     return TextFieldTapRegion(
       onTapOutside: (event) {
         widget.node.unfocus();
@@ -1176,56 +1241,41 @@ class _SmartAutoSuggestBoxOverlayState<T>
       child: FocusScope(
         node: widget.node,
         child: Container(
-          margin: _resolveMargin(widget.direction),
+          margin: _resolveMargin(widget.direction, overlayMargin),
           constraints: BoxConstraints(maxHeight: widget.maxHeight),
           clipBehavior: Clip.antiAlias,
           decoration: ShapeDecoration(
-            color: theme.colorScheme.surface,
+            color: overlayColor,
             shape: RoundedRectangleBorder(
-              borderRadius: _resolveBorderRadius(widget.direction),
+              borderRadius: _resolveBorderRadius(
+                  widget.direction, overlayBorderRadius),
             ),
-            shadows: [
-              BoxShadow(
-                color: theme.colorScheme.shadow.withAlpha((255 * .1).toInt()),
-                offset: const Offset(-1, 3),
-                blurRadius: 2.0,
-                spreadRadius: 3.0,
-              ),
-              BoxShadow(
-                color: theme.colorScheme.shadow.withAlpha((255 * .15).toInt()),
-                offset: const Offset(1, 3),
-                blurRadius: 2.0,
-                spreadRadius: 3.0,
-              ),
-            ],
+            shadows: overlayShadows,
           ),
           child: Card(
             margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-            // elevation: 0.0,
             child: Container(
-              color: theme.cardTheme.color,
+              color: cardColor,
               child: ValueListenableBuilder(
                 valueListenable: widget.isLoading,
                 builder: (context, isLoadingValue, _) {
                   final tr = SmartAutoSuggestBoxLocalizations.of(context);
-                  final theme = Theme.of(context);
                   if (isLoadingValue) {
                     return widget.waitingBuilder?.call(context) ??
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
-                              height: 4,
-                              child: const LinearProgressIndicator(),
+                              height: progressHeight,
+                              child: LinearProgressIndicator(
+                                color: progressColor,
+                              ),
                             ),
                             ListTile(
                               title: Text(tr.searchingInServer),
                               subtitle: Text(tr.searchingInServerHint),
-                              subtitleTextStyle: TextStyle(
-                                fontSize: 14.0,
-                                color: theme.colorScheme.outline,
-                              ),
+                              subtitleTextStyle: loadingStyle,
                             ),
                           ],
                         );
@@ -1256,16 +1306,15 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                     context,
                                   ),
                                 ),
-                                Divider(endIndent: 12, indent: 12),
+                                Divider(
+                                    endIndent: dividerIndent,
+                                    indent: dividerIndent),
                               ] else
                                 SizedBox(height: 4),
                               ListTile(
                                 title: Text(tr.noResultsFound),
                                 subtitle: Text(tr.noResultsFoundHint),
-                                subtitleTextStyle: theme.textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: theme.colorScheme.outline,
-                                    ),
+                                subtitleTextStyle: noResultsStyle,
                               ),
                             ];
                             result = Column(
@@ -1306,8 +1355,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                           style: item.enabled
                                               ? null
                                               : TextStyle(
-                                                  color:
-                                                      theme.colorScheme.outline,
+                                                  color: disabledColor,
                                                 ),
                                         ),
                                         semanticLabel:
@@ -1318,6 +1366,12 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                         onSelected: item.enabled
                                             ? () => widget.onSelected(item)
                                             : null,
+                                        tileColor: tileColor,
+                                        selectedTileColor: selectedTileColor,
+                                        selectedTileTextColor:
+                                            selectedTileTextColor,
+                                        tilePadding: tilePadding,
+                                        tileSubtitleStyle: tileSubtitleStyle,
                                       );
                                 },
                               ),
@@ -1345,8 +1399,18 @@ class SmartAutoSuggestBoxOverlayTile extends StatefulWidget {
     this.selected = false,
     this.onSelected,
     this.semanticLabel,
+    this.tileColor,
+    this.selectedTileColor,
+    this.selectedTileTextColor,
+    this.tilePadding,
+    this.tileSubtitleStyle,
   });
 
+  final Color? tileColor;
+  final Color? selectedTileColor;
+  final Color? selectedTileTextColor;
+  final EdgeInsetsGeometry? tilePadding;
+  final TextStyle? tileSubtitleStyle;
   final Widget title;
   final Widget? subtitle;
   final VoidCallback? onSelected;
@@ -1383,11 +1447,14 @@ class _SmartAutoSuggestBoxOverlayTileState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(left: 4, right: 4, top: 4),
+      padding: widget.tilePadding ??
+          const EdgeInsets.only(left: 4, right: 4, top: 4),
       child: ListTile(
-        tileColor: theme.colorScheme.surface,
-        selectedTileColor: theme.colorScheme.primaryContainer,
-        selectedColor: theme.colorScheme.onPrimaryContainer,
+        tileColor: widget.tileColor ?? theme.colorScheme.surface,
+        selectedTileColor:
+            widget.selectedTileColor ?? theme.colorScheme.primaryContainer,
+        selectedColor:
+            widget.selectedTileTextColor ?? theme.colorScheme.onPrimaryContainer,
         title: FadeTransition(
           opacity: Tween<double>(
             begin: 0.75,
@@ -1405,9 +1472,10 @@ class _SmartAutoSuggestBoxOverlayTileState
               ),
         selected: widget.selected,
         onTap: widget.onSelected,
-        subtitleTextStyle: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.outline,
-        ),
+        subtitleTextStyle: widget.tileSubtitleStyle ??
+            theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
       ),
     );
   }

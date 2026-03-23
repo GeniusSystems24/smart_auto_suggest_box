@@ -60,6 +60,7 @@ class SmartAutoSuggestView<T> extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.showListWhenEmpty = true,
+    this.theme,
   }) : autovalidateMode = AutovalidateMode.disabled,
        validator = null;
 
@@ -98,7 +99,14 @@ class SmartAutoSuggestView<T> extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.showListWhenEmpty = true,
+    this.theme,
   });
+
+  /// Optional theme override for this widget.
+  ///
+  /// If null, the widget will use [SmartAutoSuggestTheme] from the nearest
+  /// [Theme], or fall back to system defaults.
+  final SmartAutoSuggestTheme? theme;
 
   // ── Data ──────────────────────────────────────────────────────────────────
 
@@ -458,6 +466,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
               items: _items,
               itemBuilder: widget.itemBuilder,
               controller: _controller,
+              theme: widget.theme,
               onSelected: (SmartAutoSuggestItem<T> item) {
                 item.onSelected?.call();
                 widget.onSelected?.call(item);
@@ -577,6 +586,7 @@ class _SmartAutoSuggestViewList<T> extends StatefulWidget {
     this.onNoResultsFound,
     this.tileHeight = kComboBoxItemHeight,
     this.waitingBuilder,
+    this.theme,
   });
 
   final ValueNotifier<Set<SmartAutoSuggestItem<T>>> items;
@@ -593,6 +603,7 @@ class _SmartAutoSuggestViewList<T> extends StatefulWidget {
   final Future Function(String text)? onNoResultsFound;
   final double tileHeight;
   final Widget Function(BuildContext context)? waitingBuilder;
+  final SmartAutoSuggestTheme? theme;
 
   @override
   State<_SmartAutoSuggestViewList<T>> createState() =>
@@ -634,17 +645,44 @@ class _SmartAutoSuggestViewListState<T>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final appTheme = Theme.of(context);
+    final sat = widget.theme ??
+        appTheme.extension<SmartAutoSuggestTheme>();
+
+    final surfaceColor = sat?.overlayColor ?? appTheme.colorScheme.surface;
+    final listBorder = sat?.listBorderSide ??
+        BorderSide(color: appTheme.colorScheme.outlineVariant, width: 1);
+    final loadingStyle = sat?.loadingSubtitleStyle ??
+        TextStyle(fontSize: 14.0, color: appTheme.colorScheme.outline);
+    final noResultsStyle = sat?.noResultsSubtitleStyle ??
+        appTheme.textTheme.bodySmall?.copyWith(
+          color: appTheme.colorScheme.outline,
+        );
+    final progressHeight = sat?.progressIndicatorHeight ?? 4.0;
+    final progressColor = sat?.progressIndicatorColor;
+    final dividerIndent = sat?.dividerIndent ?? 12.0;
+    final disabledColor =
+        sat?.disabledItemColor ?? appTheme.colorScheme.outline;
+    final tileColor = sat?.tileColor ?? appTheme.colorScheme.surface;
+    final selectedTileColor =
+        sat?.selectedTileColor ?? appTheme.colorScheme.primaryContainer;
+    final selectedTileTextColor =
+        sat?.selectedTileTextColor ?? appTheme.colorScheme.onPrimaryContainer;
+    final tilePadding =
+        sat?.tilePadding ?? const EdgeInsets.only(left: 4, right: 4, top: 4);
+    final tileSubtitleStyle = sat?.tileSubtitleStyle ??
+        appTheme.textTheme.bodySmall?.copyWith(
+          color: appTheme.colorScheme.outline,
+        );
+
     return FocusScope(
       node: widget.node,
       child: Container(
         constraints: BoxConstraints(maxHeight: widget.maxHeight),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          border: Border(
-            top: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
-          ),
+          color: surfaceColor,
+          border: Border(top: listBorder),
         ),
         child: ValueListenableBuilder<bool>(
           valueListenable: widget.isLoading,
@@ -655,17 +693,16 @@ class _SmartAutoSuggestViewListState<T>
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const SizedBox(
-                        height: 4,
-                        child: LinearProgressIndicator(),
+                      SizedBox(
+                        height: progressHeight,
+                        child: LinearProgressIndicator(
+                          color: progressColor,
+                        ),
                       ),
                       ListTile(
                         title: Text(tr.searchingInServer),
                         subtitle: Text(tr.searchingInServerHint),
-                        subtitleTextStyle: TextStyle(
-                          fontSize: 14.0,
-                          color: theme.colorScheme.outline,
-                        ),
+                        subtitleTextStyle: loadingStyle,
                       ),
                     ],
                   );
@@ -699,14 +736,16 @@ class _SmartAutoSuggestViewListState<T>
                                 context,
                               ),
                             ),
-                            const Divider(endIndent: 12, indent: 12),
+                            Divider(
+                              endIndent: dividerIndent,
+                              indent: dividerIndent,
+                            ),
                           ] else
                             const SizedBox(height: 4),
                           ListTile(
                             title: Text(tr.noResultsFound),
                             subtitle: Text(tr.noResultsFoundHint),
-                            subtitleTextStyle: theme.textTheme.bodySmall
-                                ?.copyWith(color: theme.colorScheme.outline),
+                            subtitleTextStyle: noResultsStyle,
                           ),
                         ],
                       );
@@ -731,15 +770,18 @@ class _SmartAutoSuggestViewListState<T>
                                   child: item.child ?? Text(item.label),
                                   style: item.enabled
                                       ? null
-                                      : TextStyle(
-                                          color: theme.colorScheme.outline,
-                                        ),
+                                      : TextStyle(color: disabledColor),
                                 ),
                                 semanticLabel: item.semanticLabel ?? item.label,
                                 selected: item.selected || widget.node.hasFocus,
                                 onSelected: item.enabled
                                     ? () => widget.onSelected(item)
                                     : null,
+                                tileColor: tileColor,
+                                selectedTileColor: selectedTileColor,
+                                selectedTileTextColor: selectedTileTextColor,
+                                tilePadding: tilePadding,
+                                tileSubtitleStyle: tileSubtitleStyle,
                               );
                         },
                       ),

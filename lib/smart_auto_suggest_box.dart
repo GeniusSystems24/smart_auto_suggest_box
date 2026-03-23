@@ -10,6 +10,8 @@ import 'package:gap/gap.dart';
 import 'generated/l10n.dart';
 import 'src/common/common.dart';
 
+export 'smart_auto_suggest_theme.dart';
+
 // common
 export 'src/common/common.dart';
 

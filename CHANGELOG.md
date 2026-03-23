@@ -1,5 +1,26 @@
 # ChangeLog
 
+## 0.4.0
+
+### Features
+
+* **`SmartAutoSuggestTheme`** — new `ThemeExtension` for customizing the
+  appearance of both `SmartAutoSuggestBox` and `SmartAutoSuggestView`.
+  * Provides granular control over overlay colors, shadows, border radius,
+    tile colors, text styles, progress indicator, divider indent, and more.
+  * Factory constructors `SmartAutoSuggestTheme.light()` and
+    `SmartAutoSuggestTheme.dark()` with sensible defaults.
+  * Can be supplied via `ThemeData.extensions` or passed directly to a widget.
+* Both `SmartAutoSuggestBox` and `SmartAutoSuggestView` now accept an optional
+  `SmartAutoSuggestTheme? theme` parameter to override the theme locally.
+
+### Example
+
+* Split example app into multiple files: `main.dart`, `data.dart`,
+  `box_demo.dart`, `view_demo.dart`, `advanced_examples.dart`.
+* Example now registers `SmartAutoSuggestTheme.light()` and
+  `SmartAutoSuggestTheme.dark()` via `ThemeData.extensions`.
+
 ## 0.3.0
 
 ### Breaking Changes
