@@ -26,6 +26,7 @@ List<String> get fruits => [
 SmartAutoSuggestItem<String> fruitItemBuilder(
     BuildContext context, String value) {
   return SmartAutoSuggestItem(
+    key: value,
     value: value,
     label: value[0].toUpperCase() + value.substring(1),
   );

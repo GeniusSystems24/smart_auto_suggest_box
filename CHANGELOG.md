@@ -1,5 +1,29 @@
 # ChangeLog
 
+## 0.7.0
+
+### Features
+
+* **`SmartAutoSuggestHighlightText`** — new widget that highlights the matching
+  portion of suggestion labels in bold with the theme's primary color.
+  Automatically used in default tiles when no custom builder is provided.
+* **`SmartAutoSuggestItem.key`** — optional unique key for item identity.
+  When provided, equality and hashing use `key` instead of `value`.
+* **`SmartAutoSuggestItem.builder`** — new builder callback
+  `Widget Function(BuildContext context, String searchText)?` that replaces
+  the deprecated `child`. The returned widget is automatically wrapped in a
+  `Focus` widget for keyboard navigation support. The `searchText` parameter
+  enables custom highlight rendering.
+
+### Deprecations
+
+* `SmartAutoSuggestItem.child` is deprecated — use `builder` instead.
+
+### Example
+
+* Added **"Highlight + Item Builder"** demo section showing highlighted text
+  and the `builder` API with `Focus` wrapping.
+
 ## 0.6.0
 
 ### Features

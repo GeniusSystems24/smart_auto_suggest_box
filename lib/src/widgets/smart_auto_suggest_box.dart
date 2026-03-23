@@ -1466,33 +1466,44 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                 itemCount: sortedItems.length,
                                 itemBuilder: (context, index) {
                                   final item = sortedItems.elementAt(index);
-                                  return widget.itemBuilder?.call(
+                                  if (widget.itemBuilder != null) {
+                                    return widget.itemBuilder!(context, item);
+                                  }
+                                  if (item.builder != null) {
+                                    return Focus(
+                                      child: item.builder!(
                                         context,
-                                        item,
-                                      ) ??
-                                      SmartAutoSuggestBoxOverlayTile(
-                                        subtitle: null,
-                                        title: DefaultTextStyle.merge(
-                                          child: item.child ?? Text(item.label),
-                                          style: item.enabled
-                                              ? null
-                                              : TextStyle(color: disabledColor),
-                                        ),
-                                        semanticLabel:
-                                            item.semanticLabel ?? item.label,
-                                        selected:
-                                            item.selected ||
-                                            widget.node.hasFocus,
-                                        onSelected: item.enabled
-                                            ? () => widget.onSelected(item)
-                                            : null,
-                                        tileColor: tileColor,
-                                        selectedTileColor: selectedTileColor,
-                                        selectedTileTextColor:
-                                            selectedTileTextColor,
-                                        tilePadding: tilePadding,
-                                        tileSubtitleStyle: tileSubtitleStyle,
-                                      );
+                                        searchValue,
+                                      ),
+                                    );
+                                  }
+                                  return SmartAutoSuggestBoxOverlayTile(
+                                    subtitle: null,
+                                    title: DefaultTextStyle.merge(
+                                      child: item.child ??
+                                          SmartAutoSuggestHighlightText(
+                                            text: item.label,
+                                            query: searchValue,
+                                          ),
+                                      style: item.enabled
+                                          ? null
+                                          : TextStyle(color: disabledColor),
+                                    ),
+                                    semanticLabel:
+                                        item.semanticLabel ?? item.label,
+                                    selected:
+                                        item.selected ||
+                                        widget.node.hasFocus,
+                                    onSelected: item.enabled
+                                        ? () => widget.onSelected(item)
+                                        : null,
+                                    tileColor: tileColor,
+                                    selectedTileColor: selectedTileColor,
+                                    selectedTileTextColor:
+                                        selectedTileTextColor,
+                                    tilePadding: tilePadding,
+                                    tileSubtitleStyle: tileSubtitleStyle,
+                                  );
                                 },
                               ),
                             );

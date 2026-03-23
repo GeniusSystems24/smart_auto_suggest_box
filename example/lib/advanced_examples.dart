@@ -236,6 +236,54 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
             },
             onSelected: (item) {},
           ),
+          const SizedBox(height: 32),
+
+          // ── 5. Highlight Text + Custom builder ──────────────────────────
+          sectionHeader(
+            context,
+            title: '5. Highlight + Item Builder',
+            subtitle:
+                'Matching text is highlighted in bold. Items use the '
+                'builder callback with Focus wrapping.',
+          ),
+          const SizedBox(height: 8),
+          SmartAutoSuggestBox<String>(
+            dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: (context, value) => SmartAutoSuggestItem(
+                key: value,
+                value: value,
+                label: value[0].toUpperCase() + value.substring(1),
+                builder: (context, searchText) {
+                  final label =
+                      value[0].toUpperCase() + value.substring(1);
+                  final emoji = fruitEmojis[value] ?? '';
+                  return ListTile(
+                    leading: Text(emoji, style: const TextStyle(fontSize: 20)),
+                    title: SmartAutoSuggestHighlightText(
+                      text: label,
+                      query: searchText,
+                    ),
+                    subtitle: Text(
+                      'key: $value',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              initialList: (context) => fruits,
+            ),
+            tileHeight: 64,
+            decoration: const InputDecoration(
+              labelText: 'Search fruits',
+              hintText: 'Type to see highlighting...',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.highlight),
+            ),
+            onSelected: (item) {},
+          ),
           const SizedBox(height: 48),
         ],
       ),

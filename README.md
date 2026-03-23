@@ -29,7 +29,7 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.6.0
+  smart_auto_suggest_box: ^0.7.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -262,6 +262,43 @@ SmartAutoSuggestView.form(
   autovalidateMode: AutovalidateMode.onUserInteraction,
   onSelected: (item) {},
 );
+```
+
+## Highlight Matching Text
+
+By default, suggestion labels highlight the matching portion in bold with the
+theme's primary color using `SmartAutoSuggestHighlightText`. You can also use
+it directly:
+
+```dart
+SmartAutoSuggestHighlightText(
+  text: 'Apple Pie',
+  query: 'app',
+  // optional: baseStyle, matchStyle
+)
+```
+
+## Item Builder with Focus
+
+Use `SmartAutoSuggestItem.builder` instead of the deprecated `child` to build
+custom item widgets. The builder receives the current `searchText` for
+highlighting, and the widget is automatically wrapped in `Focus` for keyboard
+navigation:
+
+```dart
+SmartAutoSuggestItem(
+  key: 'apple',
+  value: 'apple',
+  label: 'Apple',
+  builder: (context, searchText) {
+    return ListTile(
+      title: SmartAutoSuggestHighlightText(
+        text: 'Apple',
+        query: searchText,
+      ),
+    );
+  },
+)
 ```
 
 ## SmartAutoSuggestController
