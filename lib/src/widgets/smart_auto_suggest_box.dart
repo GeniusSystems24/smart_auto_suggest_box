@@ -1,4 +1,4 @@
-part of '../smart_auto_suggest_box.dart';
+part of '../../smart_auto_suggest_box.dart';
 
 /// An SmartAutoSuggestBox provides a list of suggestions for a user to select from
 /// as they type.

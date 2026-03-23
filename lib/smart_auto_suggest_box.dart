@@ -9,6 +9,11 @@ import 'package:gap/gap.dart';
 
 import 'generated/l10n.dart';
 
-part 'src/common.dart';
-part 'src/smart_auto_suggest_box.dart';
-part 'src/smart_auto_suggest_view.dart';
+// common
+part 'src/common/common.dart';
+part 'src/common/smart_auto_suggest_data_source.dart';
+part 'src/common/smart_auto_suggest_item.dart';
+
+// widgets
+part 'src/widgets/smart_auto_suggest_box.dart';
+part 'src/widgets/smart_auto_suggest_view.dart';

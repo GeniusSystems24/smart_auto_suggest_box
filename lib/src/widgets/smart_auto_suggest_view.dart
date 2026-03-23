@@ -1,4 +1,4 @@
-part of '../smart_auto_suggest_box.dart';
+part of '../../smart_auto_suggest_box.dart';
 
 /// A widget that shows a [TextField] and, directly below it in the normal
 /// widget tree, an inline suggestion list.
