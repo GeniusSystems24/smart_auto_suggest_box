@@ -1,5 +1,15 @@
 # ChangeLog
 
+## 0.7.3
+
+### Bug Fixes
+
+* **Keep focus when interacting with overlay** — the floating suggestion
+  list is now treated as part of the text field using `TextFieldTapRegion`,
+  so tapping overlay items no longer causes the text field to lose focus.
+  Focus is only removed when tapping truly outside both the text field and
+  the overlay.
+
 ## 0.7.2
 
 ### Features
