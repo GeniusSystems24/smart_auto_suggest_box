@@ -1149,20 +1149,34 @@ class _SmartAutoSuggestBoxOverlayState<T>
   }
 
   EdgeInsetsGeometry _resolveMargin(
-      SmartAutoSuggestBoxDirection direction, double margin) {
+    SmartAutoSuggestBoxDirection direction,
+    double margin,
+  ) {
     switch (direction) {
       case SmartAutoSuggestBoxDirection.top:
         return EdgeInsetsDirectional.only(
-            start: margin, end: margin, bottom: margin);
+          start: margin,
+          end: margin,
+          bottom: margin,
+        );
       case SmartAutoSuggestBoxDirection.start:
         return EdgeInsetsDirectional.only(
-            top: margin, bottom: margin, end: margin);
+          top: margin,
+          bottom: margin,
+          end: margin,
+        );
       case SmartAutoSuggestBoxDirection.end:
         return EdgeInsetsDirectional.only(
-            top: margin, bottom: margin, start: margin);
+          top: margin,
+          bottom: margin,
+          start: margin,
+        );
       case SmartAutoSuggestBoxDirection.bottom:
         return EdgeInsetsDirectional.only(
-            start: margin, end: margin, top: margin);
+          start: margin,
+          end: margin,
+          top: margin,
+        );
     }
   }
 
@@ -1186,11 +1200,11 @@ class _SmartAutoSuggestBoxOverlayState<T>
   @override
   Widget build(BuildContext context) {
     final appTheme = Theme.of(context);
-    final sat = widget.theme ??
-        appTheme.extension<SmartAutoSuggestTheme>();
+    final sat = widget.theme ?? appTheme.extension<SmartAutoSuggestTheme>();
 
     final overlayColor = sat?.overlayColor ?? appTheme.colorScheme.surface;
-    final overlayShadows = sat?.overlayShadows ??
+    final overlayShadows =
+        sat?.overlayShadows ??
         [
           BoxShadow(
             color: appTheme.colorScheme.shadow.withAlpha((255 * .1).toInt()),
@@ -1220,7 +1234,8 @@ class _SmartAutoSuggestBoxOverlayState<T>
         );
     final progressHeight = sat?.progressIndicatorHeight ?? 4.0;
     final progressColor = sat?.progressIndicatorColor;
-    final disabledColor = sat?.disabledItemColor ?? appTheme.colorScheme.outline;
+    final disabledColor =
+        sat?.disabledItemColor ?? appTheme.colorScheme.outline;
     final tilePadding =
         sat?.tilePadding ?? const EdgeInsets.only(left: 4, right: 4, top: 4);
     final tileColor = sat?.tileColor ?? appTheme.colorScheme.surface;
@@ -1248,7 +1263,9 @@ class _SmartAutoSuggestBoxOverlayState<T>
             color: overlayColor,
             shape: RoundedRectangleBorder(
               borderRadius: _resolveBorderRadius(
-                  widget.direction, overlayBorderRadius),
+                widget.direction,
+                overlayBorderRadius,
+              ),
             ),
             shadows: overlayShadows,
           ),
@@ -1307,8 +1324,9 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                   ),
                                 ),
                                 Divider(
-                                    endIndent: dividerIndent,
-                                    indent: dividerIndent),
+                                  endIndent: dividerIndent,
+                                  indent: dividerIndent,
+                                ),
                               ] else
                                 SizedBox(height: 4),
                               ListTile(
@@ -1354,9 +1372,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                           child: item.child ?? Text(item.label),
                                           style: item.enabled
                                               ? null
-                                              : TextStyle(
-                                                  color: disabledColor,
-                                                ),
+                                              : TextStyle(color: disabledColor),
                                         ),
                                         semanticLabel:
                                             item.semanticLabel ?? item.label,
@@ -1447,14 +1463,16 @@ class _SmartAutoSuggestBoxOverlayTileState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: widget.tilePadding ??
+      padding:
+          widget.tilePadding ??
           const EdgeInsets.only(left: 4, right: 4, top: 4),
       child: ListTile(
         tileColor: widget.tileColor ?? theme.colorScheme.surface,
         selectedTileColor:
             widget.selectedTileColor ?? theme.colorScheme.primaryContainer,
         selectedColor:
-            widget.selectedTileTextColor ?? theme.colorScheme.onPrimaryContainer,
+            widget.selectedTileTextColor ??
+            theme.colorScheme.onPrimaryContainer,
         title: FadeTransition(
           opacity: Tween<double>(
             begin: 0.75,
@@ -1472,7 +1490,8 @@ class _SmartAutoSuggestBoxOverlayTileState
               ),
         selected: widget.selected,
         onTap: widget.onSelected,
-        subtitleTextStyle: widget.tileSubtitleStyle ??
+        subtitleTextStyle:
+            widget.tileSubtitleStyle ??
             theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
             ),

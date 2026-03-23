@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 
 import 'generated/l10n.dart';
+import 'smart_auto_suggest_theme.dart';
 import 'src/common/common.dart';
 
 export 'smart_auto_suggest_theme.dart';
