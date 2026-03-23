@@ -12,10 +12,11 @@ part of '../../smart_auto_suggest_box.dart';
 /// ```dart
 /// SmartAutoSuggestView<String>(
 ///   dataSource: SmartAutoSuggestDataSource(
-///     initialList: (context) => [
-///       SmartAutoSuggestItem(value: 'apple', label: 'Apple'),
-///       SmartAutoSuggestItem(value: 'banana', label: 'Banana'),
-///     ],
+///     itemBuilder: (context, value) => SmartAutoSuggestItem(
+///       value: value,
+///       label: value,
+///     ),
+///     initialList: (context) => ['apple', 'banana'],
 ///     onSearch: (context, current, text) async => await api.search(text),
 ///   ),
 ///   decoration: const InputDecoration(
@@ -272,8 +273,10 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (widget.dataSource?.initialList != null) {
-        final initial = widget.dataSource!.initialList!(context);
-        _items.value = initial.toSet();
+        final rawValues = widget.dataSource!.initialList!(context);
+        _items.value = rawValues
+            .map((v) => widget.dataSource!.itemBuilder(context, v))
+            .toSet();
         _localItems = sorter(_controller.text, _items.value);
         if (mounted) setState(() {});
       }
@@ -305,8 +308,10 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
     }
     if (widget.dataSource != oldWidget.dataSource &&
         widget.dataSource?.initialList != null) {
-      final initial = widget.dataSource!.initialList!(context);
-      _items.value = initial.toSet();
+      final rawValues = widget.dataSource!.initialList!(context);
+      _items.value = rawValues
+          .map((v) => widget.dataSource!.itemBuilder(context, v))
+          .toSet();
       _updateLocalItems();
       _dynamicItemsController.add(_items.value);
     }
@@ -357,12 +362,15 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
           lastSearchLoaded = currentText;
           isLoading.value = true;
           try {
-            final newItems = await widget.dataSource!.onSearch!(
+            final rawValues = await widget.dataSource!.onSearch!(
               context,
-              _items.value.toList(),
+              _items.value.map((i) => i.value).toList(),
               text,
             );
-            if (newItems.isNotEmpty) {
+            if (rawValues.isNotEmpty) {
+              final newItems = rawValues
+                  .map((v) => widget.dataSource!.itemBuilder(context, v))
+                  .toSet();
               _items.value = {..._items.value, ...newItems};
               _localItems = sorter(_controller.text, _items.value);
             }

@@ -3,13 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_auto_suggest_box/generated/l10n.dart';
 import 'package:smart_auto_suggest_box/smart_auto_suggest_box.dart';
 
-List<SmartAutoSuggestItem<String>> _items(int count) {
-  return List<SmartAutoSuggestItem<String>>.generate(
-    count,
-    (index) => SmartAutoSuggestItem<String>(
-      value: 'value_$index',
-      label: 'Item $index',
-    ),
+List<String> _items(int count) {
+  return List<String>.generate(count, (index) => 'value_$index');
+}
+
+SmartAutoSuggestItem<String> _itemBuilder(BuildContext context, String value) {
+  final index = value.replaceFirst('value_', '');
+  return SmartAutoSuggestItem<String>(
+    value: value,
+    label: 'Item $index',
   );
 }
 
@@ -42,6 +44,7 @@ Widget _testApp({
           SizedBox(height: topSpacer),
           SmartAutoSuggestBox<String>(
             dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: _itemBuilder,
               initialList: (_) => _items(itemCount),
             ),
             direction: direction,
@@ -186,6 +189,7 @@ void main() {
             height: 320,
             child: SmartAutoSuggestView<String>(
               dataSource: SmartAutoSuggestDataSource(
+                itemBuilder: _itemBuilder,
                 initialList: (_) => _items(20),
               ),
               showListWhenEmpty: true,

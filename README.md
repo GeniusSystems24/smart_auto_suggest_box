@@ -28,7 +28,7 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.2.0
+  smart_auto_suggest_box: ^0.3.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -71,10 +71,11 @@ supportedLocales:[
 ```dart
 SmartAutoSuggestBox<String>(
   dataSource: SmartAutoSuggestDataSource(
-    initialList: (context) => [
-      SmartAutoSuggestItem(value: 'apple', label: 'Apple'),
-      SmartAutoSuggestItem(value: 'banana', label: 'Banana'),
-    ],
+    itemBuilder: (context, value) => SmartAutoSuggestItem(
+      value: value,
+      label: value[0].toUpperCase() + value.substring(1),
+    ),
+    initialList: (context) => ['apple', 'banana'],
   ),
   decoration: const InputDecoration(
     labelText: 'Search fruits',
@@ -89,10 +90,11 @@ SmartAutoSuggestBox<String>(
 ```dart
 SmartAutoSuggestView<String>(
   dataSource: SmartAutoSuggestDataSource(
-    initialList: (context) => [
-      SmartAutoSuggestItem(value: 'apple', label: 'Apple'),
-      SmartAutoSuggestItem(value: 'banana', label: 'Banana'),
-    ],
+    itemBuilder: (context, value) => SmartAutoSuggestItem(
+      value: value,
+      label: value[0].toUpperCase() + value.substring(1),
+    ),
+    initialList: (context) => ['apple', 'banana'],
   ),
   showListWhenEmpty: true,   // show list even when text field is empty
   listMaxHeight: 300,
@@ -109,12 +111,13 @@ SmartAutoSuggestView<String>(
 ```dart
 SmartAutoSuggestBox<String>(   // or SmartAutoSuggestView
   dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (context, value) => SmartAutoSuggestItem(
+      value: value,
+      label: value,
+    ),
     initialList: (context) => [],
     onSearch: (context, currentItems, searchText) async {
-      final results = await api.search(searchText);
-      return results.map((r) =>
-        SmartAutoSuggestItem(value: r.id, label: r.name),
-      ).toList();
+      return await api.search(searchText);
     },
     debounce: const Duration(milliseconds: 500),
   ),
@@ -129,6 +132,10 @@ Call `onSearch` on every keystroke (after debounce):
 ```dart
 SmartAutoSuggestBox<String>(
   dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (context, value) => SmartAutoSuggestItem(
+      value: value,
+      label: value,
+    ),
     initialList: (context) => localItems,
     onSearch: (context, current, searchText) async {
       return await api.search(searchText);
@@ -144,7 +151,10 @@ SmartAutoSuggestBox<String>(
 
 ```dart
 SmartAutoSuggestBox<String>(
-  dataSource: SmartAutoSuggestDataSource(initialList: (c) => items),
+  dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (c, v) => SmartAutoSuggestItem(value: v, label: v),
+    initialList: (c) => items,
+  ),
   direction: SmartAutoSuggestBoxDirection.top,   // falls back if no space
   onSelected: (item) {},
 );
@@ -172,6 +182,10 @@ showModalBottomSheet(
         Expanded(
           child: SmartAutoSuggestView<String>(
             dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: (context, value) => SmartAutoSuggestItem(
+                value: value,
+                label: value,
+              ),
               initialList: (context) => myItems,
             ),
             showListWhenEmpty: true,
@@ -189,7 +203,10 @@ showModalBottomSheet(
 
 ```dart
 SmartAutoSuggestBox<String>(
-  dataSource: SmartAutoSuggestDataSource(initialList: (c) => items),
+  dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (c, v) => SmartAutoSuggestItem(value: v, label: v),
+    initialList: (c) => items,
+  ),
   noResultsFoundBuilder: (context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -212,7 +229,10 @@ SmartAutoSuggestBox<String>(
 
 ```dart
 SmartAutoSuggestBox<String>(
-  dataSource: SmartAutoSuggestDataSource(initialList: (c) => items),
+  dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (c, v) => SmartAutoSuggestItem(value: v, label: v),
+    initialList: (c) => items,
+  ),
   tileHeight: 72,
   itemBuilder: (context, item) {
     return ListTile(
@@ -230,7 +250,10 @@ SmartAutoSuggestBox<String>(
 
 ```dart
 SmartAutoSuggestView.form(
-  dataSource: SmartAutoSuggestDataSource(initialList: (c) => items),
+  dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (c, v) => SmartAutoSuggestItem(value: v, label: v),
+    initialList: (c) => items,
+  ),
   validator: (value) {
     if (value == null || value.isEmpty) return 'Required';
     return null;
@@ -244,8 +267,9 @@ SmartAutoSuggestView.form(
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `initialList` | `List<SmartAutoSuggestItem<T>> Function(BuildContext)?` | `null` | Sync initial items |
-| `onSearch` | `Future<List<SmartAutoSuggestItem<T>>> Function(BuildContext, List, String?)?` | `null` | Async search |
+| `itemBuilder` | `SmartAutoSuggestItem<T> Function(BuildContext, T)` | **required** | Converts raw `T` to `SmartAutoSuggestItem<T>` |
+| `initialList` | `List<T> Function(BuildContext)?` | `null` | Sync initial items (raw values) |
+| `onSearch` | `Future<List<T>> Function(BuildContext, List<T>, String?)?` | `null` | Async search (returns raw values) |
 | `searchMode` | `SmartAutoSuggestSearchMode` | `onNoLocalResults` | When to trigger `onSearch` |
 | `debounce` | `Duration` | `400ms` | Debounce before calling `onSearch` |
 

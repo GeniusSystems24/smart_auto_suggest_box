@@ -1,5 +1,35 @@
 # ChangeLog
 
+## 0.3.0
+
+### Breaking Changes
+
+* **`SmartAutoSuggestDataSource` API overhaul** — the data source now works with
+  raw values (`T`) instead of `SmartAutoSuggestItem<T>`:
+
+  | Property | Old type | New type |
+  |----------|----------|----------|
+  | `initialList` | `List<SmartAutoSuggestItem<T>> Function(BuildContext)?` | `List<T> Function(BuildContext)?` |
+  | `onSearch` | `Future<List<SmartAutoSuggestItem<T>>> Function(BuildContext, List<SmartAutoSuggestItem<T>>, String?)?` | `Future<List<T>> Function(BuildContext, List<T>, String?)?` |
+
+* **New required `itemBuilder`** — `SmartAutoSuggestDataSource` now requires an
+  `itemBuilder` callback that converts each raw value `T` into a
+  `SmartAutoSuggestItem<T>`:
+
+  ```dart
+  SmartAutoSuggestDataSource<String>(
+    itemBuilder: (context, value) => SmartAutoSuggestItem(
+      value: value,
+      label: value[0].toUpperCase() + value.substring(1),
+    ),
+    initialList: (context) => ['apple', 'banana'],
+  )
+  ```
+
+### Example
+
+* Updated all example code to use the new `itemBuilder` API.
+
 ## 0.2.1
 
 ### Fixes

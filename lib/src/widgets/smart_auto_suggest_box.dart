@@ -383,8 +383,10 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
 
       // Populate items from dataSource.initialList
       if (widget.dataSource?.initialList != null) {
-        final initial = widget.dataSource!.initialList!(context);
-        widget.items.value = initial.toSet();
+        final rawValues = widget.dataSource!.initialList!(context);
+        widget.items.value = rawValues
+            .map((v) => widget.dataSource!.itemBuilder(context, v))
+            .toSet();
         _updateLocalItems();
       }
     });
@@ -439,8 +441,10 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     // Re-populate items if dataSource changed
     if (widget.dataSource != oldWidget.dataSource &&
         widget.dataSource?.initialList != null) {
-      final initial = widget.dataSource!.initialList!(context);
-      widget.items.value = initial.toSet();
+      final rawValues = widget.dataSource!.initialList!(context);
+      widget.items.value = rawValues
+          .map((v) => widget.dataSource!.itemBuilder(context, v))
+          .toSet();
       _updateLocalItems();
       _dynamicItemsController.add(widget.items.value);
     }
@@ -498,12 +502,15 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
           lastSearchLoaded = currentText;
           isLoading.value = true;
           try {
-            final newItems = await widget.dataSource!.onSearch!(
+            final rawValues = await widget.dataSource!.onSearch!(
               context,
-              widget.items.value.toList(),
+              widget.items.value.map((i) => i.value).toList(),
               text,
             );
-            if (newItems.isNotEmpty) {
+            if (rawValues.isNotEmpty) {
+              final newItems = rawValues
+                  .map((v) => widget.dataSource!.itemBuilder(context, v))
+                  .toSet();
               widget.items.value = {...widget.items.value, ...newItems};
               _localItems = sorter(_controller.text, widget.items.value);
             }

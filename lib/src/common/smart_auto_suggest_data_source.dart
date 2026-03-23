@@ -8,41 +8,51 @@ part of '../../smart_auto_suggest_box.dart';
 /// ```dart
 /// SmartAutoSuggestBox<String>(
 ///   dataSource: SmartAutoSuggestDataSource(
-///     initialList: (context) => [
-///       SmartAutoSuggestItem(value: 'apple', label: 'Apple'),
-///       SmartAutoSuggestItem(value: 'banana', label: 'Banana'),
-///     ],
+///     itemBuilder: (context, value) => SmartAutoSuggestItem(
+///       value: value,
+///       label: value,
+///     ),
+///     initialList: (context) => ['apple', 'banana'],
 ///     onSearch: (context, currentItems, searchText) async {
-///       final results = await api.search(searchText);
-///       return results.map((r) =>
-///         SmartAutoSuggestItem(value: r.id, label: r.name),
-///       ).toList();
+///       return await api.search(searchText);
 ///     },
 ///   ),
 /// )
 /// ```
 class SmartAutoSuggestDataSource<T> {
+  /// Converts a raw value of type [T] into a [SmartAutoSuggestItem].
+  ///
+  /// This builder is called for every item returned by [initialList] and
+  /// [onSearch] to create the corresponding [SmartAutoSuggestItem].
+  final SmartAutoSuggestItem<T> Function(BuildContext context, T value)
+  itemBuilder;
+
   /// Synchronous initial items provided when the widget first builds.
   ///
   /// Called once during [initState] with the widget's [BuildContext].
-  final List<SmartAutoSuggestItem<T>> Function(BuildContext context)?
+  /// Returns a list of raw values that will be converted to
+  /// [SmartAutoSuggestItem] via [itemBuilder].
+  final List<T> Function(BuildContext context)?
   initialList;
 
   /// Async search callback invoked when new data is needed.
   ///
   /// Parameters:
   /// - [context]: The widget's build context
-  /// - [currentItems]: The current list of items in the widget
+  /// - [currentItems]: The current list of raw values in the widget
   /// - [searchText]: The current search text (null when loading initial data)
+  ///
+  /// Returns a list of raw values that will be converted to
+  /// [SmartAutoSuggestItem] via [itemBuilder].
   ///
   /// When invoked depends on [searchMode]:
   /// - [SmartAutoSuggestSearchMode.onNoLocalResults]: Called only when
   ///   local filtering yields no results.
   /// - [SmartAutoSuggestSearchMode.always]: Called on every text change
   ///   after the [debounce] duration.
-  final Future<List<SmartAutoSuggestItem<T>>> Function(
+  final Future<List<T>> Function(
     BuildContext context,
-    List<SmartAutoSuggestItem<T>> currentItems,
+    List<T> currentItems,
     String? searchText,
   )?
   onSearch;
@@ -59,6 +69,7 @@ class SmartAutoSuggestDataSource<T> {
 
   /// Creates a data source for [SmartAutoSuggestBox].
   const SmartAutoSuggestDataSource({
+    required this.itemBuilder,
     this.initialList,
     this.onSearch,
     this.searchMode = SmartAutoSuggestSearchMode.onNoLocalResults,

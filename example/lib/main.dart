@@ -82,22 +82,31 @@ class _DemoHomeState extends State<_DemoHome> {
 // Sample data
 // ─────────────────────────────────────────────────────────────────────────────
 
-List<SmartAutoSuggestItem<String>> get _fruits => [
-      SmartAutoSuggestItem(value: 'apple', label: 'Apple'),
-      SmartAutoSuggestItem(value: 'apricot', label: 'Apricot'),
-      SmartAutoSuggestItem(value: 'avocado', label: 'Avocado'),
-      SmartAutoSuggestItem(value: 'banana', label: 'Banana'),
-      SmartAutoSuggestItem(value: 'cherry', label: 'Cherry'),
-      SmartAutoSuggestItem(value: 'date', label: 'Date'),
-      SmartAutoSuggestItem(value: 'elderberry', label: 'Elderberry'),
-      SmartAutoSuggestItem(value: 'fig', label: 'Fig'),
-      SmartAutoSuggestItem(value: 'grape', label: 'Grape'),
-      SmartAutoSuggestItem(value: 'honeydew', label: 'Honeydew'),
-      SmartAutoSuggestItem(value: 'kiwi', label: 'Kiwi'),
-      SmartAutoSuggestItem(value: 'lemon', label: 'Lemon'),
-      SmartAutoSuggestItem(value: 'mango', label: 'Mango'),
-      SmartAutoSuggestItem(value: 'orange', label: 'Orange'),
+List<String> get _fruits => [
+      'apple',
+      'apricot',
+      'avocado',
+      'banana',
+      'cherry',
+      'date',
+      'elderberry',
+      'fig',
+      'grape',
+      'honeydew',
+      'kiwi',
+      'lemon',
+      'mango',
+      'orange',
     ];
+
+/// Shared item builder used across demos.
+SmartAutoSuggestItem<String> _fruitItemBuilder(
+    BuildContext context, String value) {
+  return SmartAutoSuggestItem(
+    value: value,
+    label: value[0].toUpperCase() + value.substring(1),
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SmartAutoSuggestBox demo (floating overlay)
@@ -169,6 +178,7 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
             dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: _fruitItemBuilder,
               initialList: (context) => _fruits,
             ),
             direction: _direction,
@@ -209,11 +219,12 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
             dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: _fruitItemBuilder,
               initialList: (context) => [],
               onSearch: (context, current, searchText) async {
                 await Future.delayed(const Duration(seconds: 1));
                 return _fruits
-                    .where((f) => f.label.toLowerCase().contains(
+                    .where((f) => f.toLowerCase().contains(
                         (searchText ?? '').toLowerCase()))
                     .toList();
               },
@@ -241,15 +252,11 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
             dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: _fruitItemBuilder,
               initialList: (context) => _fruits.take(3).toList(),
               onSearch: (context, current, searchText) async {
                 await Future.delayed(const Duration(milliseconds: 600));
-                return [
-                  SmartAutoSuggestItem(
-                    value: 'server_${searchText ?? ''}',
-                    label: '🔍 Server: ${searchText ?? ''}',
-                  ),
-                ];
+                return ['server_${searchText ?? ''}'];
               },
               searchMode: SmartAutoSuggestSearchMode.always,
               debounce: const Duration(milliseconds: 500),
@@ -332,16 +339,12 @@ class _SmartAutoSuggestViewDemoState extends State<SmartAutoSuggestViewDemo> {
               padding: const EdgeInsets.all(16),
               child: SmartAutoSuggestView<String>(
                 dataSource: SmartAutoSuggestDataSource(
+                  itemBuilder: _fruitItemBuilder,
                   initialList: (context) => _fruits,
                   onSearch: (context, current, searchText) async {
                     // Simulate server returning extra items
                     await Future.delayed(const Duration(milliseconds: 700));
-                    return [
-                      SmartAutoSuggestItem(
-                        value: 'server_${searchText ?? ''}',
-                        label: '🔍 Server: ${searchText ?? ''}',
-                      ),
-                    ];
+                    return ['server_${searchText ?? ''}'];
                   },
                   searchMode: SmartAutoSuggestSearchMode.onNoLocalResults,
                   debounce: const Duration(milliseconds: 400),
@@ -431,6 +434,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
             dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: _fruitItemBuilder,
               initialList: (context) => _fruits,
             ),
             decoration: const InputDecoration(
@@ -484,7 +488,13 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
             dataSource: SmartAutoSuggestDataSource(
-              initialList: (context) => _fruitsWithEmoji,
+              itemBuilder: (context, value) => SmartAutoSuggestItem(
+                value: value,
+                label: value[0].toUpperCase() + value.substring(1),
+                child: Text(
+                    '${_fruitEmojis[value] ?? ''} ${value[0].toUpperCase() + value.substring(1)}'),
+              ),
+              initialList: (context) => _fruits,
             ),
             tileHeight: 72,
             decoration: const InputDecoration(
@@ -547,11 +557,12 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
             dataSource: SmartAutoSuggestDataSource(
+              itemBuilder: _fruitItemBuilder,
               initialList: (context) => [],
               onSearch: (context, current, searchText) async {
                 await Future.delayed(const Duration(seconds: 2));
                 return _fruits
-                    .where((f) => f.label
+                    .where((f) => f
                         .toLowerCase()
                         .contains((searchText ?? '').toLowerCase()))
                     .toList();
@@ -667,6 +678,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                     padding: const EdgeInsets.all(16),
                     child: SmartAutoSuggestView<String>(
                       dataSource: SmartAutoSuggestDataSource(
+                        itemBuilder: _fruitItemBuilder,
                         initialList: (context) => _fruits,
                       ),
                       showListWhenEmpty: true,
@@ -736,14 +748,6 @@ const _fruitEmojis = <String, String>{
   'mango': '🥭',
   'orange': '🍊',
 };
-
-List<SmartAutoSuggestItem<String>> get _fruitsWithEmoji => _fruits
-    .map((f) => SmartAutoSuggestItem(
-          value: f.value,
-          label: f.label,
-          child: Text('${_fruitEmojis[f.value] ?? ''} ${f.label}'),
-        ))
-    .toList();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper
