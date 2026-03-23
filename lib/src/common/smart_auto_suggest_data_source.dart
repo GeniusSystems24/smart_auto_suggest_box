@@ -1,4 +1,4 @@
-part of '../../smart_auto_suggest_box.dart';
+part of 'common.dart';
 
 /// A data source configuration for [SmartAutoSuggestBox] that provides
 /// flexible data fetching capabilities including sync initial data

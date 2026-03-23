@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_auto_suggest_box/generated/l10n.dart';
 import 'package:smart_auto_suggest_box/smart_auto_suggest_box.dart';
+import 'package:smart_auto_suggest_box/smart_auto_suggest_view.dart';
 
 List<String> _items(int count) {
   return List<String>.generate(count, (index) => 'value_$index');

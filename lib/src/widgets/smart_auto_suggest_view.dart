@@ -1,4 +1,4 @@
-part of '../../smart_auto_suggest_box.dart';
+part of '../../smart_auto_suggest_view.dart';
 
 /// A widget that shows a [TextField] and, directly below it in the normal
 /// widget tree, an inline suggestion list.
@@ -341,7 +341,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
 
   void _unselectAll() {
     for (final item in _localItems) {
-      item._selected = false;
+      item.selected = false;
       item.onFocusChange?.call(false);
     }
   }
@@ -392,7 +392,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
   }
 
   void _onSubmitted(List<SmartAutoSuggestItem<T>> localItemsList) {
-    final idx = localItemsList.indexWhere((item) => item._selected);
+    final idx = localItemsList.indexWhere((item) => item.selected);
     if (idx.isNegative) return;
     final item = localItemsList[idx];
     widget.onSelected?.call(item);
@@ -408,7 +408,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
   Widget build(BuildContext context) {
     void select(int index) {
       _unselectAll();
-      final item = (_localItems.elementAt(index)).._selected = true;
+      final item = (_localItems.elementAt(index))..selected = true;
       item.onFocusChange?.call(true);
       _focusStreamController.add(index);
       setState(() {});
@@ -426,7 +426,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
         final localList = _localItems.toList();
         if (localList.isEmpty) return KeyEventResult.ignored;
 
-        final currentIdx = localList.indexWhere((item) => item._selected);
+        final currentIdx = localList.indexWhere((item) => item.selected);
         final lastIdx = localList.length - 1;
 
         if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
@@ -725,7 +725,7 @@ class _SmartAutoSuggestViewListState<T>
                         itemBuilder: (context, index) {
                           final item = sortedItems.elementAt(index);
                           return widget.itemBuilder?.call(context, item) ??
-                              _SmartAutoSuggestBoxOverlayTile(
+                              SmartAutoSuggestBoxOverlayTile(
                                 subtitle: null,
                                 title: DefaultTextStyle.merge(
                                   child: item.child ?? Text(item.label),
@@ -736,8 +736,7 @@ class _SmartAutoSuggestViewListState<T>
                                         ),
                                 ),
                                 semanticLabel: item.semanticLabel ?? item.label,
-                                selected:
-                                    item._selected || widget.node.hasFocus,
+                                selected: item.selected || widget.node.hasFocus,
                                 onSelected: item.enabled
                                     ? () => widget.onSelected(item)
                                     : null,

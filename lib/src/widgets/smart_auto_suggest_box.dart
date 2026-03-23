@@ -885,7 +885,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
 
   void _unselectAll() {
     for (final item in _localItems) {
-      item._selected = false;
+      item.selected = false;
       item.onFocusChange?.call(false);
     }
   }
@@ -897,7 +897,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
 
   void _onSubmitted(List<SmartAutoSuggestItem<T>> localItemsList) {
     final currentlySelectedIndex = localItemsList.indexWhere(
-      (item) => item._selected,
+      (item) => item.selected,
     );
     if (currentlySelectedIndex.isNegative) return;
 
@@ -921,7 +921,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   Widget build(BuildContext context) {
     void select(int index) {
       _unselectAll();
-      final item = (_localItems.elementAt(index)).._selected = true;
+      final item = (_localItems.elementAt(index))..selected = true;
       item.onFocusChange?.call(true);
       _focusStreamController.add(index);
     }
@@ -944,7 +944,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
           if (localItemsList.isEmpty) return KeyEventResult.ignored;
 
           final currentlySelectedIndex = localItemsList.indexWhere(
-            (item) => item._selected,
+            (item) => item.selected,
           );
 
           final lastIndex = localItemsList.length - 1;
@@ -1299,7 +1299,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                         context,
                                         item,
                                       ) ??
-                                      _SmartAutoSuggestBoxOverlayTile(
+                                      SmartAutoSuggestBoxOverlayTile(
                                         subtitle: null,
                                         title: DefaultTextStyle.merge(
                                           child: item.child ?? Text(item.label),
@@ -1313,7 +1313,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                         semanticLabel:
                                             item.semanticLabel ?? item.label,
                                         selected:
-                                            item._selected ||
+                                            item.selected ||
                                             widget.node.hasFocus,
                                         onSelected: item.enabled
                                             ? () => widget.onSelected(item)
@@ -1338,8 +1338,8 @@ class _SmartAutoSuggestBoxOverlayState<T>
   }
 }
 
-class _SmartAutoSuggestBoxOverlayTile extends StatefulWidget {
-  const _SmartAutoSuggestBoxOverlayTile({
+class SmartAutoSuggestBoxOverlayTile extends StatefulWidget {
+  const SmartAutoSuggestBoxOverlayTile({
     required this.title,
     required this.subtitle,
     this.selected = false,
@@ -1354,12 +1354,12 @@ class _SmartAutoSuggestBoxOverlayTile extends StatefulWidget {
   final String? semanticLabel;
 
   @override
-  State<_SmartAutoSuggestBoxOverlayTile> createState() =>
-      __SmartAutoSuggestBoxOverlayTileState();
+  State<SmartAutoSuggestBoxOverlayTile> createState() =>
+      _SmartAutoSuggestBoxOverlayTileState();
 }
 
-class __SmartAutoSuggestBoxOverlayTileState
-    extends State<_SmartAutoSuggestBoxOverlayTile>
+class _SmartAutoSuggestBoxOverlayTileState
+    extends State<SmartAutoSuggestBoxOverlayTile>
     with SingleTickerProviderStateMixin {
   late AnimationController controller;
 

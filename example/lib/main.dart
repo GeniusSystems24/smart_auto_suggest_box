@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smart_auto_suggest_box/generated/l10n.dart';
 import 'package:smart_auto_suggest_box/smart_auto_suggest_box.dart';
+import 'package:smart_auto_suggest_box/smart_auto_suggest_view.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
@@ -83,25 +84,27 @@ class _DemoHomeState extends State<_DemoHome> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 List<String> get _fruits => [
-      'apple',
-      'apricot',
-      'avocado',
-      'banana',
-      'cherry',
-      'date',
-      'elderberry',
-      'fig',
-      'grape',
-      'honeydew',
-      'kiwi',
-      'lemon',
-      'mango',
-      'orange',
-    ];
+  'apple',
+  'apricot',
+  'avocado',
+  'banana',
+  'cherry',
+  'date',
+  'elderberry',
+  'fig',
+  'grape',
+  'honeydew',
+  'kiwi',
+  'lemon',
+  'mango',
+  'orange',
+];
 
 /// Shared item builder used across demos.
 SmartAutoSuggestItem<String> _fruitItemBuilder(
-    BuildContext context, String value) {
+  BuildContext context,
+  String value,
+) {
   return SmartAutoSuggestItem(
     value: value,
     label: value[0].toUpperCase() + value.substring(1),
@@ -121,8 +124,7 @@ class SmartAutoSuggestBoxDemo extends StatefulWidget {
 }
 
 class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
-  SmartAutoSuggestBoxDirection _direction =
-      SmartAutoSuggestBoxDirection.bottom;
+  SmartAutoSuggestBoxDirection _direction = SmartAutoSuggestBoxDirection.bottom;
   String? _selected;
 
   @override
@@ -201,9 +203,7 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
             const SizedBox(height: 8),
             Text(
               'Selected: $_selected',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
             ),
           ],
           const SizedBox(height: 32),
@@ -224,8 +224,11 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
               onSearch: (context, current, searchText) async {
                 await Future.delayed(const Duration(seconds: 1));
                 return _fruits
-                    .where((f) => f.toLowerCase().contains(
-                        (searchText ?? '').toLowerCase()))
+                    .where(
+                      (f) => f.toLowerCase().contains(
+                        (searchText ?? '').toLowerCase(),
+                      ),
+                    )
                     .toList();
               },
               searchMode: SmartAutoSuggestSearchMode.onNoLocalResults,
@@ -246,8 +249,7 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
           _sectionHeader(
             context,
             title: '3. searchMode.always',
-            subtitle:
-                'onSearch fires on every keystroke (after debounce).',
+            subtitle: 'onSearch fires on every keystroke (after debounce).',
           ),
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
@@ -492,7 +494,8 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                 value: value,
                 label: value[0].toUpperCase() + value.substring(1),
                 child: Text(
-                    '${_fruitEmojis[value] ?? ''} ${value[0].toUpperCase() + value.substring(1)}'),
+                  '${_fruitEmojis[value] ?? ''} ${value[0].toUpperCase() + value.substring(1)}',
+                ),
               ),
               initialList: (context) => _fruits,
             ),
@@ -512,8 +515,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                 Colors.purple,
                 Colors.blue,
               ];
-              final color =
-                  colors[item.label.length % colors.length];
+              final color = colors[item.label.length % colors.length];
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: color.withValues(alpha: .15),
@@ -528,8 +530,10 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                   ),
                 ),
                 trailing: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(12),
@@ -562,9 +566,11 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
               onSearch: (context, current, searchText) async {
                 await Future.delayed(const Duration(seconds: 2));
                 return _fruits
-                    .where((f) => f
-                        .toLowerCase()
-                        .contains((searchText ?? '').toLowerCase()))
+                    .where(
+                      (f) => f.toLowerCase().contains(
+                        (searchText ?? '').toLowerCase(),
+                      ),
+                    )
                     .toList();
               },
               debounce: const Duration(milliseconds: 300),
@@ -643,10 +649,9 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withValues(alpha: .4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: .4),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -708,19 +713,36 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
 }
 
 Widget _shimmerRow(BuildContext context) {
-  final color =
-      Theme.of(context).colorScheme.onSurface.withValues(alpha: .08);
+  final color = Theme.of(context).colorScheme.onSurface.withValues(alpha: .08);
   return Row(
     children: [
-      Container(width: 40, height: 40, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
       const SizedBox(width: 12),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(height: 12, width: double.infinity, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4))),
+            Container(
+              height: 12,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
             const SizedBox(height: 6),
-            Container(height: 10, width: 120, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4))),
+            Container(
+              height: 10,
+              width: 120,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
           ],
         ),
       ),

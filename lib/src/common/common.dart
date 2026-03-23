@@ -1,4 +1,9 @@
-part of '../../smart_auto_suggest_box.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+part 'smart_auto_suggest_data_source.dart';
+part 'smart_auto_suggest_item.dart';
 
 const kPickerHeight = 32.0;
 const kPickerDiameterRatio = 100.0;

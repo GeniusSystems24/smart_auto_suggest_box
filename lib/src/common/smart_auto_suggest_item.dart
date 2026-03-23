@@ -1,4 +1,4 @@
-part of '../../smart_auto_suggest_box.dart';
+part of 'common.dart';
 
 /// An item used in [SmartAutoSuggestBox]
 class SmartAutoSuggestItem<T> {
@@ -31,6 +31,13 @@ class SmartAutoSuggestItem<T> {
   final bool enabled;
 
   bool _selected = false;
+  bool get selected => _selected;
+  set selected(bool value) {
+    if (_selected != value) {
+      _selected = value;
+      onFocusChange?.call(value);
+    }
+  }
 
   /// Creates an auto suggest box item
   SmartAutoSuggestItem({
