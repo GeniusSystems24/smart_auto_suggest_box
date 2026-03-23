@@ -806,8 +806,13 @@ class _SmartAutoSuggestViewListState<T>
                             return widget.itemBuilder!(context, item);
                           }
                           if (item.builder != null) {
-                            return Focus(
-                              child: item.builder!(context, searchText),
+                            return GestureDetector(
+                              onTap: item.enabled
+                                  ? () => widget.onSelected(item)
+                                  : null,
+                              child: Focus(
+                                child: item.builder!(context, searchText),
+                              ),
                             );
                           }
                           return SmartAutoSuggestBoxOverlayTile(

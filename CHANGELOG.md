@@ -1,5 +1,18 @@
 # ChangeLog
 
+## 0.7.1
+
+### Bug Fixes
+
+* **Dismiss overlay on selection** — the floating suggestion overlay now
+  correctly closes when the user selects an item.
+* **Dismiss overlay on tap outside** — tapping outside the overlay or the
+  text field now dismisses the floating suggestion list and unfocuses the
+  input.
+* **Builder items selectable** — items using `SmartAutoSuggestItem.builder`
+  are now tappable to trigger selection (both in `SmartAutoSuggestBox` and
+  `SmartAutoSuggestView`).
+
 ## 0.7.0
 
 ### Features

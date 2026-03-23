@@ -949,9 +949,15 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                     item.label,
                     FluentTextChangedReason.suggestionChosen,
                   );
+                  dismissOverlay();
+                  _focusNode.unfocus();
                 },
                 noResultsFoundBuilder: widget.noResultsFoundBuilder,
                 onNoResultsFound: _buildSearchCallback(),
+                onDismiss: () {
+                  dismissOverlay();
+                  _focusNode.unfocus();
+                },
               ),
             ),
           ),
@@ -1189,6 +1195,7 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
     required this.isLoading,
     this.theme,
     this.onNoResultsFound,
+    this.onDismiss,
     this.tileHeight = kComboBoxItemHeight,
     this.waitingBuilder,
     this.direction = SmartAutoSuggestBoxDirection.bottom,
@@ -1207,6 +1214,7 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
   final WidgetOrNullBuilder? noResultsFoundBuilder;
   final ValueNotifier<bool> isLoading;
   final Future Function(String text)? onNoResultsFound;
+  final VoidCallback? onDismiss;
   final double tileHeight;
   final Widget Function(BuildContext context)? waitingBuilder;
   final SmartAutoSuggestBoxDirection direction;
@@ -1353,9 +1361,10 @@ class _SmartAutoSuggestBoxOverlayState<T>
           color: appTheme.colorScheme.outline,
         );
 
-    return TextFieldTapRegion(
+    return TapRegion(
       onTapOutside: (event) {
         widget.node.unfocus();
+        widget.onDismiss?.call();
       },
       child: FocusScope(
         node: widget.node,
@@ -1470,10 +1479,15 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                     return widget.itemBuilder!(context, item);
                                   }
                                   if (item.builder != null) {
-                                    return Focus(
-                                      child: item.builder!(
-                                        context,
-                                        searchValue,
+                                    return GestureDetector(
+                                      onTap: item.enabled
+                                          ? () => widget.onSelected(item)
+                                          : null,
+                                      child: Focus(
+                                        child: item.builder!(
+                                          context,
+                                          searchValue,
+                                        ),
                                       ),
                                     );
                                   }
