@@ -375,6 +375,14 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   SmartAutoSuggestSorter<T> get sorter =>
       widget.sorter ?? widget.defaultItemSorter;
 
+  /// Returns the search text from the start of the input to the cursor position.
+  String get _searchText {
+    final text = _controller.text;
+    final offset = _controller.selection.baseOffset;
+    if (offset < 0 || offset > text.length) return text;
+    return text.substring(0, offset);
+  }
+
   /// The effective [SmartAutoSuggestController] for this widget.
   SmartAutoSuggestController<T>? get _smartController =>
       widget.smartController ?? _ownedSmartController;
@@ -409,7 +417,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
 
   void _updateLocalItems() {
     if (!mounted) return;
-    setState(() => _localItems = sorter(_controller.text, widget.items.value));
+    setState(() => _localItems = sorter(_searchText, widget.items.value));
   }
 
   @override
@@ -435,7 +443,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     _controller.addListener(_handleTextChanged);
     _focusNode.addListener(_handleFocusChanged);
 
-    _localItems = sorter(_controller.text, widget.items.value);
+    _localItems = sorter(_searchText, widget.items.value);
 
     // Update the overlay when the text box size has changed
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -574,7 +582,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
         widget.dataSource?.onSearch != null) {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(widget.dataSource!.debounce, () {
-        _buildSearchCallback()?.call(_controller.text.trim());
+        _buildSearchCallback()?.call(_searchText.trim());
       });
     }
 
@@ -596,7 +604,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                 SmartAutoSuggestSearchMode.always) {
           await Future.delayed(widget.dataSource!.debounce);
         }
-        final currentText = _controller.value.text.trim();
+        final currentText = _searchText.trim();
         if (currentText.isNotEmpty &&
             !lastSearchLoaded.startsWith(currentText) &&
             text == currentText) {
@@ -613,7 +621,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                   .map((v) => widget.dataSource!.itemBuilder(context, v))
                   .toSet();
               widget.items.value = {...widget.items.value, ...newItems};
-              _localItems = sorter(_controller.text, widget.items.value);
+              _localItems = sorter(_searchText, widget.items.value);
             }
           } catch (_) {
             // Swallow errors like the existing .onError handler
@@ -629,7 +637,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     if (widget.onNoResultsFound != null) {
       return (text) async {
         await Future.delayed(const Duration(milliseconds: 400));
-        final currentText = _controller.value.text.trim();
+        final currentText = _searchText.trim();
         if (currentText.isNotEmpty &&
             !lastSearchLoaded.startsWith(currentText) &&
             text == currentText) {
@@ -642,7 +650,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
           await Future.delayed(const Duration(milliseconds: 300));
           if (newItems.isNotEmpty) {
             widget.items.value = {...widget.items.value, ...newItems};
-            _localItems = sorter(_controller.text, widget.items.value);
+            _localItems = sorter(_searchText, widget.items.value);
           }
           isLoading.value = false;
         }
@@ -1413,7 +1421,12 @@ class _SmartAutoSuggestBoxOverlayState<T>
                   return ValueListenableBuilder<TextEditingValue>(
                     valueListenable: widget.controller,
                     builder: (context, search, _) {
-                      final searchValue = search.text.trim();
+                      final cursorOffset = search.selection.baseOffset;
+                      final textToCursor =
+                          (cursorOffset >= 0 && cursorOffset <= search.text.length)
+                              ? search.text.substring(0, cursorOffset)
+                              : search.text;
+                      final searchValue = textToCursor.trim();
                       return ValueListenableBuilder(
                         valueListenable: items,
                         builder: (context, itemsValue, child) {

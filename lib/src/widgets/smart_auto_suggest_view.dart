@@ -271,6 +271,14 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
   SmartAutoSuggestController<T>? get _smartController =>
       widget.smartController ?? _ownedSmartController;
 
+  /// Returns the search text from the start of the input to the cursor position.
+  String get _searchText {
+    final text = _controller.text;
+    final offset = _controller.selection.baseOffset;
+    if (offset < 0 || offset > text.length) return text;
+    return text.substring(0, offset);
+  }
+
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
   String lastSearchLoaded = '';
   Timer? _debounceTimer;
@@ -280,7 +288,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
 
   void _updateLocalItems() {
     if (!mounted) return;
-    setState(() => _localItems = sorter(_controller.text, _items.value));
+    setState(() => _localItems = sorter(_searchText, _items.value));
   }
 
   @override
@@ -313,7 +321,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
         _items.value = rawValues
             .map((v) => widget.dataSource!.itemBuilder(context, v))
             .toSet();
-        _localItems = sorter(_controller.text, _items.value);
+        _localItems = sorter(_searchText, _items.value);
         if (mounted) setState(() {});
       }
     });
@@ -380,7 +388,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
         widget.dataSource?.onSearch != null) {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(widget.dataSource!.debounce, () {
-        _buildSearchCallback()?.call(_controller.text.trim());
+        _buildSearchCallback()?.call(_searchText.trim());
       });
     }
 
@@ -406,7 +414,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
                 SmartAutoSuggestSearchMode.always) {
           await Future.delayed(widget.dataSource!.debounce);
         }
-        final currentText = _controller.value.text.trim();
+        final currentText = _searchText.trim();
         if (currentText.isNotEmpty &&
             !lastSearchLoaded.startsWith(currentText) &&
             text == currentText) {
@@ -423,7 +431,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
                   .map((v) => widget.dataSource!.itemBuilder(context, v))
                   .toSet();
               _items.value = {..._items.value, ...newItems};
-              _localItems = sorter(_controller.text, _items.value);
+              _localItems = sorter(_searchText, _items.value);
             }
           } catch (_) {
             // swallow errors
@@ -750,7 +758,12 @@ class _SmartAutoSuggestViewListState<T>
             return ValueListenableBuilder<TextEditingValue>(
               valueListenable: widget.controller,
               builder: (context, search, _) {
-                final searchText = search.text.trim();
+                final cursorOffset = search.selection.baseOffset;
+                final textToCursor =
+                    (cursorOffset >= 0 && cursorOffset <= search.text.length)
+                        ? search.text.substring(0, cursorOffset)
+                        : search.text;
+                final searchText = textToCursor.trim();
                 return ValueListenableBuilder<Set<SmartAutoSuggestItem<T>>>(
                   valueListenable: _items,
                   builder: (context, itemsValue, _) {

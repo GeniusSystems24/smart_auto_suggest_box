@@ -1,5 +1,16 @@
 # ChangeLog
 
+## 0.7.2
+
+### Features
+
+* **Show all items on focus** — when the input field is focused with empty
+  content, all available items are now displayed in the suggestion list.
+* **Cursor-based search text** — the search query is now calculated from the
+  start of the text to the cursor position, not the entire text. For example,
+  if the text is "الحساب الجديد" and the cursor is after "الحساب", only
+  "الحساب" is used as the search query.
+
 ## 0.7.1
 
 ### Bug Fixes
