@@ -1,17 +1,19 @@
 # Smart Auto Suggest Box
 
-A highly customizable auto-suggest (autocomplete) Flutter package offering two widgets:
+A highly customizable auto-suggest (autocomplete) Flutter package offering three widgets:
 
-- **`SmartAutoSuggestBox`** — floating overlay dropdown
-- **`SmartAutoSuggestView`** — inline suggestion list embedded in the widget tree
+- **`SmartAutoSuggestBox`** — floating overlay dropdown (single select)
+- **`SmartAutoSuggestView`** — inline suggestion list embedded in the widget tree (single select)
+- **`SmartAutoSuggestMultiSelectBox`** — floating overlay with multi-item selection and chips
 
-Both share the same `SmartAutoSuggestDataSource` API and item model.
+All share the same `SmartAutoSuggestDataSource` API and item model.
 
 [![pub package](https://img.shields.io/pub/v/smart_auto_suggest_box.svg)](https://pub.dev/packages/smart_auto_suggest_box)
 
 ## Features
 
-- **Two display modes** — floating overlay (`SmartAutoSuggestBox`) or inline list (`SmartAutoSuggestView`)
+- **Three display modes** — floating overlay (`SmartAutoSuggestBox`), inline list (`SmartAutoSuggestView`), or multi-select (`SmartAutoSuggestMultiSelectBox`)
+- **Multi-select** — chip-based selection area, configurable max visible chips, "Show all" BottomSheet, max selections limit
 - **Unified data source** — `SmartAutoSuggestDataSource` with sync `initialList` and async `onSearch`
 - **Smart overlay positioning** — auto-repositions to the opposite side if insufficient space (`SmartAutoSuggestBox` only)
 - **4-direction support** — `top`, `bottom`, `start`, `end` with RTL awareness
@@ -29,7 +31,7 @@ Both share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.7.0
+  smart_auto_suggest_box: ^0.10.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -355,6 +357,92 @@ SmartAutoSuggestBox<String>(
 
 Tapping the custom widget clears the selection and restores the `TextField`.
 To clear programmatically, use `SmartAutoSuggestBoxState.clearSelection()`.
+
+## SmartAutoSuggestMultiSelectBox
+
+Select multiple items from a floating overlay. Selected items appear as chips
+below the text field.
+
+### Basic Multi-Select
+
+```dart
+SmartAutoSuggestMultiSelectBox<String>(
+  dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (context, value) => SmartAutoSuggestItem(
+      value: value,
+      label: value[0].toUpperCase() + value.substring(1),
+    ),
+    initialList: (context) => ['apple', 'banana', 'cherry', 'date'],
+  ),
+  decoration: const InputDecoration(
+    labelText: 'Select fruits',
+    border: OutlineInputBorder(),
+  ),
+  onSelectionChanged: (selected) {
+    print('Selected: ${selected.map((e) => e.label).join(', ')}');
+  },
+);
+```
+
+### With Max Selections
+
+Limit the number of selectable items. Unselected items are disabled once the
+limit is reached. Tap a selected item in the overlay to deselect it.
+
+```dart
+SmartAutoSuggestMultiSelectBox<String>(
+  dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (context, value) => SmartAutoSuggestItem(
+      value: value,
+      label: value,
+    ),
+    initialList: (context) => items,
+  ),
+  maxSelections: 5,
+  maxVisibleChips: 2,  // show 2 chips, then "Show all" button
+  onSelectionChanged: (selected) {},
+);
+```
+
+### Multi-Select Controller
+
+Use `SmartAutoSuggestMultiSelectController<T>` to observe and manipulate
+selections from outside the widget:
+
+```dart
+final controller = SmartAutoSuggestMultiSelectController<String>();
+
+// Pass to widget
+SmartAutoSuggestMultiSelectBox<String>(
+  smartController: controller,
+  dataSource: SmartAutoSuggestDataSource(...),
+)
+
+// Listen to selection changes
+controller.selectedItems.addListener(() {
+  print('Count: ${controller.selectedItems.value.length}');
+});
+
+// Programmatic control
+controller.select(item);
+controller.deselect(item);
+controller.toggleSelection(item);
+controller.clearAll();
+
+// Don't forget to dispose
+controller.dispose();
+```
+
+### Multi-Select Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `dataSource` | `SmartAutoSuggestDataSource<T>` | **required** | Data source for items |
+| `smartController` | `SmartAutoSuggestMultiSelectController<T>?` | `null` | External controller |
+| `maxVisibleChips` | `int` | `3` | Max chips shown before "Show all" button |
+| `maxSelections` | `int?` | `null` | Max selectable items (`null` = unlimited) |
+| `chipBuilder` | `Widget Function(BuildContext, item, onRemove)?` | `null` | Custom chip widget |
+| `onSelectionChanged` | `ValueChanged<Set<SmartAutoSuggestItem<T>>>?` | `null` | Selection change callback |
 
 ## Theming
 
