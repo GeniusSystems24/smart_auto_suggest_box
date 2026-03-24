@@ -1202,6 +1202,8 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
     this.tileHeight = kComboBoxItemHeight,
     this.waitingBuilder,
     this.direction = SmartAutoSuggestBoxDirection.bottom,
+    this.multiSelectController,
+    this.maxSelections,
   });
 
   final SmartAutoSuggestTheme? theme;
@@ -1220,6 +1222,8 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
   final double tileHeight;
   final Widget Function(BuildContext context)? waitingBuilder;
   final SmartAutoSuggestBoxDirection direction;
+  final SmartAutoSuggestMultiSelectController<T>? multiSelectController;
+  final int? maxSelections;
 
   @override
   State<_SmartAutoSuggestBoxOverlay<T>> createState() =>
@@ -1481,11 +1485,26 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                   if (widget.itemBuilder != null) {
                                     return widget.itemBuilder!(context, item);
                                   }
+
+                                  // Multi-select state
+                                  final isMultiSelect =
+                                      widget.multiSelectController != null;
+                                  final isItemSelected = isMultiSelect &&
+                                      widget.multiSelectController!
+                                          .isSelected(item);
+                                  final atMax = isMultiSelect &&
+                                      widget.maxSelections != null &&
+                                      widget.multiSelectController!
+                                              .selectedItems.value.length >=
+                                          widget.maxSelections!;
+                                  final isDisabled = !item.enabled ||
+                                      (atMax && !isItemSelected);
+
                                   if (item.builder != null) {
                                     return GestureDetector(
-                                      onTap: item.enabled
-                                          ? () => widget.onSelected(item)
-                                          : null,
+                                      onTap: isDisabled
+                                          ? null
+                                          : () => widget.onSelected(item),
                                       child: Focus(
                                         child: item.builder!(
                                           context,
@@ -1502,17 +1521,24 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                             text: item.label,
                                             query: searchValue,
                                           ),
-                                      style: item.enabled
-                                          ? null
-                                          : TextStyle(color: disabledColor),
+                                      style: isDisabled
+                                          ? TextStyle(color: disabledColor)
+                                          : null,
                                     ),
                                     semanticLabel:
                                         item.semanticLabel ?? item.label,
-                                    selected:
+                                    selected: isItemSelected ||
                                         item.selected ||
                                         widget.node.hasFocus,
-                                    onSelected: item.enabled
-                                        ? () => widget.onSelected(item)
+                                    onSelected: isDisabled
+                                        ? null
+                                        : () => widget.onSelected(item),
+                                    trailing: isItemSelected
+                                        ? Icon(
+                                            Icons.check,
+                                            size: 18,
+                                            color: selectedTileTextColor,
+                                          )
                                         : null,
                                     tileColor: tileColor,
                                     selectedTileColor: selectedTileColor,
@@ -1552,6 +1578,7 @@ class SmartAutoSuggestBoxOverlayTile extends StatefulWidget {
     this.selectedTileTextColor,
     this.tilePadding,
     this.tileSubtitleStyle,
+    this.trailing,
   });
 
   final Color? tileColor;
@@ -1564,6 +1591,7 @@ class SmartAutoSuggestBoxOverlayTile extends StatefulWidget {
   final VoidCallback? onSelected;
   final bool selected;
   final String? semanticLabel;
+  final Widget? trailing;
 
   @override
   State<SmartAutoSuggestBoxOverlayTile> createState() =>
@@ -1622,6 +1650,7 @@ class _SmartAutoSuggestBoxOverlayTileState
               ),
         selected: widget.selected,
         onTap: widget.onSelected,
+        trailing: widget.trailing,
         subtitleTextStyle:
             widget.tileSubtitleStyle ??
             theme.textTheme.bodySmall?.copyWith(

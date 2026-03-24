@@ -6,6 +6,7 @@ part 'smart_auto_suggest_controller.dart';
 part 'smart_auto_suggest_data_source.dart';
 part 'smart_auto_suggest_highlight_text.dart';
 part 'smart_auto_suggest_item.dart';
+part 'smart_auto_suggest_multi_select_controller.dart';
 
 const kPickerHeight = 32.0;
 const kPickerDiameterRatio = 100.0;

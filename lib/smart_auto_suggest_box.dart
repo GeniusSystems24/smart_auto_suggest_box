@@ -18,3 +18,4 @@ export 'src/common/common.dart';
 
 // widgets
 part 'src/widgets/smart_auto_suggest_box.dart';
+part 'src/widgets/smart_auto_suggest_multi_select_box.dart';

@@ -1,5 +1,34 @@
 # ChangeLog
 
+## 0.10.0
+
+### Features
+
+* **`SmartAutoSuggestMultiSelectBox`** — new multi-select widget that allows
+  selecting multiple items from a floating suggestion overlay.
+  * Selected items are shown as compact chips below the text field.
+  * Configurable `maxVisibleChips` (default 3) — excess items are accessible
+    via a "Show all" button that opens a `BottomSheet`.
+  * Each chip has a cancel button to deselect the item.
+  * Optional `maxSelections` — when the limit is reached, remaining unselected
+    items are disabled in the overlay.
+  * Tapping a selected item in the overlay toggles it off (deselects).
+  * Custom `chipBuilder` for full control over chip appearance.
+
+* **`SmartAutoSuggestMultiSelectController`** — new controller that provides
+  access to both the text input (`textController`) and the set of currently
+  selected items (`selectedItems` `ValueNotifier`). Supports `select`,
+  `deselect`, `toggleSelection`, `clearAll`, and `isSelected`.
+
+* **`SmartAutoSuggestBoxOverlayTile.trailing`** — new optional widget
+  displayed at the end of overlay tiles (used internally for check marks in
+  multi-select mode).
+
+### Example
+
+* Added **"Multi-Select (Basic)"** and **"Multi-Select (Max 5)"** demo
+  sections in Advanced Examples.
+
 ## 0.7.3
 
 ### Bug Fixes
