@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'advanced_examples.dart';
 import 'box_demo.dart';
+import 'multi_select_demo.dart';
 import 'view_demo.dart';
 
 void main() {
@@ -67,6 +68,7 @@ class _DemoHomeState extends State<_DemoHome> {
         children: const [
           SmartAutoSuggestBoxDemo(),
           SmartAutoSuggestViewDemo(),
+          MultiSelectDemo(),
           AdvancedExamplesDemo(),
         ],
       ),
@@ -76,11 +78,15 @@ class _DemoHomeState extends State<_DemoHome> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.text_fields),
-            label: 'Box (floating)',
+            label: 'Box',
           ),
           NavigationDestination(
             icon: Icon(Icons.list_alt),
-            label: 'View (inline)',
+            label: 'View',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.checklist),
+            label: 'Multi-Select',
           ),
           NavigationDestination(
             icon: Icon(Icons.auto_awesome),
