@@ -195,6 +195,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   void _updateLocalItems() {
     if (!mounted) return;
     setState(() => _localItems = sorter(_searchText, _items.value));
+    if (isOverlayVisible) _autoSelectFirstItem();
   }
 
   @override
@@ -613,6 +614,30 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   void showOverlay() {
     if (_entry == null && !(_entry?.mounted ?? false)) {
       _insertOverlay();
+      _autoSelectFirstItem();
+    }
+  }
+
+  /// On desktop platforms, automatically focus the first item when
+  /// the overlay opens so the user can navigate with arrow keys
+  /// and confirm with Enter right away.
+  void _autoSelectFirstItem() {
+    if (!widget.enableKeyboardControls) return;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.windows:
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final items = _localItems.toList();
+          if (items.isEmpty) return;
+          _unselectAll();
+          items.first.selected = true;
+          items.first.onFocusChange?.call(true);
+          _focusStreamController.add(0);
+        });
+      default:
+        break;
     }
   }
 
