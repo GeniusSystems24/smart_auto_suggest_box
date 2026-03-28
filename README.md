@@ -19,7 +19,7 @@ All share the same `SmartAutoSuggestDataSource` API and item model.
 - **4-direction support** — `top`, `bottom`, `start`, `end` with RTL awareness
 - **Search modes** — `onNoLocalResults` (default) or `always` (every keystroke)
 - **Configurable debounce** — control search trigger timing
-- **Keyboard navigation** — ↑ ↓ Enter Escape
+- **Keyboard navigation** — ↑ ↓ Enter Escape, auto-focus first item on desktop
 - **Form support** — `SmartAutoSuggestBox.form()` and `SmartAutoSuggestView.form()` with validation
 - **Scrollbar** — visible scrollbar thumb when the suggestion list overflows
 - **Custom builders** — item, no-results, loading state, **selected item display**
@@ -31,7 +31,7 @@ All share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.10.0
+  smart_auto_suggest_box: ^0.10.1
 
 # localization (optional, but recommended)
   flutter_localizations:

@@ -1,5 +1,26 @@
 # ChangeLog
 
+## 0.10.1
+
+### Features
+
+* **Desktop keyboard auto-focus** — on desktop platforms (Windows, macOS, Linux)
+  the first item in the floating overlay is now automatically focused when the
+  dropdown opens, so the user can immediately navigate with arrow keys and
+  confirm with Enter without needing to press ↓ first.
+* **Enter key support in `SmartAutoSuggestBox`** — pressing Enter now selects
+  the currently focused item (was already supported in
+  `SmartAutoSuggestMultiSelectBox` and `SmartAutoSuggestView`).
+* **Focus follows filter** — when the user types and the suggestion list
+  updates, focus automatically resets to the first matching item on desktop.
+
+### Example
+
+* Added dedicated **Multi-Select** demo screen with 6 examples: basic usage,
+  max selections, custom `maxVisibleChips`, custom `chipBuilder`, controller
+  demo, and async search. Accessible via a new "Multi-Select" tab in the bottom
+  navigation bar.
+
 ## 0.10.0
 
 ### Features
