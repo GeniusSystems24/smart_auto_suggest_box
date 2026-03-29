@@ -1,23 +1,35 @@
 part of 'common.dart';
 
-/// A data source configuration for [SmartAutoSuggestBox] that provides
-/// flexible data fetching capabilities including sync initial data
-/// and async search.
+/// A stateful data source for [SmartAutoSuggestBox],
+/// [SmartAutoSuggestView], and [SmartAutoSuggestMultiSelectBox].
+///
+/// Manages the full lifecycle of suggestion items: loading initial data,
+/// filtering, async searching, and notifying listeners when data changes.
+///
+/// Can be controlled externally to trigger searches, update items, or
+/// observe loading/filtered state.
 ///
 /// Example:
 /// ```dart
-/// SmartAutoSuggestBox<String>(
-///   dataSource: SmartAutoSuggestDataSource(
-///     itemBuilder: (context, value) => SmartAutoSuggestItem(
-///       value: value,
-///       label: value,
-///     ),
-///     initialList: (context) => ['apple', 'banana'],
-///     onSearch: (context, currentItems, searchText) async {
-///       return await api.search(searchText);
-///     },
+/// final dataSource = SmartAutoSuggestDataSource<String>(
+///   itemBuilder: (context, value) => SmartAutoSuggestItem(
+///     value: value,
+///     label: value,
 ///   ),
-/// )
+///   initialList: (context) => ['apple', 'banana'],
+///   onSearch: (context, currentItems, searchText) async {
+///     return await api.search(searchText);
+///   },
+/// );
+///
+/// // Listen to changes externally
+/// dataSource.filteredItems.addListener(() {
+///   print('Filtered: ${dataSource.filteredItems.value.length}');
+/// });
+///
+/// dataSource.isLoading.addListener(() {
+///   print('Loading: ${dataSource.isLoading.value}');
+/// });
 /// ```
 class SmartAutoSuggestDataSource<T> {
   /// Converts a raw value of type [T] into a [SmartAutoSuggestItem].
@@ -25,15 +37,14 @@ class SmartAutoSuggestDataSource<T> {
   /// This builder is called for every item returned by [initialList] and
   /// [onSearch] to create the corresponding [SmartAutoSuggestItem].
   final SmartAutoSuggestItem<T> Function(BuildContext context, T value)
-  itemBuilder;
+      itemBuilder;
 
   /// Synchronous initial items provided when the widget first builds.
   ///
   /// Called once during [initState] with the widget's [BuildContext].
   /// Returns a list of raw values that will be converted to
   /// [SmartAutoSuggestItem] via [itemBuilder].
-  final List<T> Function(BuildContext context)?
-  initialList;
+  final List<T> Function(BuildContext context)? initialList;
 
   /// Async search callback invoked when new data is needed.
   ///
@@ -54,8 +65,7 @@ class SmartAutoSuggestDataSource<T> {
     BuildContext context,
     List<T> currentItems,
     String? searchText,
-  )?
-  onSearch;
+  )? onSearch;
 
   /// Controls when [onSearch] is invoked.
   ///
@@ -67,12 +77,143 @@ class SmartAutoSuggestDataSource<T> {
   /// Defaults to 400ms. Set to [Duration.zero] for no debounce.
   final Duration debounce;
 
+  // ─── State ──────────────────────────────────────────────────────────
+
+  /// All available items (unfiltered).
+  final ValueNotifier<Set<SmartAutoSuggestItem<T>>> items =
+      ValueNotifier(<SmartAutoSuggestItem<T>>{});
+
+  /// The currently filtered/sorted items shown in the overlay.
+  final ValueNotifier<Set<SmartAutoSuggestItem<T>>> filteredItems =
+      ValueNotifier(<SmartAutoSuggestItem<T>>{});
+
+  /// Whether an async search is in progress.
+  final ValueNotifier<bool> isLoading = ValueNotifier(false);
+
+  /// Tracks the last search query to avoid duplicate requests.
+  String lastSearchQuery = '';
+
+  /// Debounce timer for search-mode-always.
+  Timer? _debounceTimer;
+
+  /// The sorter currently in use (set by the widget).
+  SmartAutoSuggestSorter<T>? activeSorter;
+
   /// Creates a data source for [SmartAutoSuggestBox].
-  const SmartAutoSuggestDataSource({
+  SmartAutoSuggestDataSource({
     required this.itemBuilder,
     this.initialList,
     this.onSearch,
     this.searchMode = SmartAutoSuggestSearchMode.onNoLocalResults,
     this.debounce = const Duration(milliseconds: 400),
   });
+
+  /// Initializes items from [initialList]. Called once from the widget's
+  /// [initState].
+  void initialize(BuildContext context) {
+    if (initialList != null) {
+      final rawValues = initialList!(context);
+      items.value =
+          rawValues.map((v) => itemBuilder(context, v)).toSet();
+    }
+  }
+
+  /// Applies the [sorter] to [items] and updates [filteredItems].
+  void filter(String searchText, [SmartAutoSuggestSorter<T>? sorter]) {
+    if (sorter != null) activeSorter = sorter;
+    final s = activeSorter;
+    if (s == null) {
+      filteredItems.value = items.value;
+    } else {
+      filteredItems.value = s(searchText, items.value);
+    }
+  }
+
+  /// Performs an async search using [onSearch].
+  ///
+  /// After results arrive, merges new items into [items] and re-filters.
+  /// The overlay updates automatically via [filteredItems].
+  Future<void> search(
+    BuildContext context,
+    String searchText,
+  ) async {
+    if (onSearch == null) return;
+
+    if (debounce > Duration.zero &&
+        searchMode != SmartAutoSuggestSearchMode.always) {
+      await Future.delayed(debounce);
+    }
+
+    final trimmed = searchText.trim();
+    if (trimmed.isEmpty) return;
+    if (lastSearchQuery.startsWith(trimmed) &&
+        trimmed == lastSearchQuery) {
+      return;
+    }
+
+    lastSearchQuery = trimmed;
+    isLoading.value = true;
+    try {
+      final rawValues = await onSearch!(
+        context,
+        items.value.map((i) => i.value).toList(),
+        trimmed,
+      );
+      if (rawValues.isNotEmpty) {
+        final newItems =
+            rawValues.map((v) => itemBuilder(context, v)).toSet();
+        items.value = {...items.value, ...newItems};
+        filter(searchText);
+      }
+    } catch (_) {
+      // Swallow errors
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Schedules a debounced search (used by search-mode-always).
+  void scheduleSearch(BuildContext context, String searchText) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(debounce, () {
+      search(context, searchText);
+    });
+  }
+
+  /// Replaces all items and re-filters.
+  void setItems(Set<SmartAutoSuggestItem<T>> newItems, String searchText) {
+    items.value = newItems;
+    filter(searchText);
+  }
+
+  /// Merges new items into the existing set and re-filters.
+  void addItems(Set<SmartAutoSuggestItem<T>> newItems, String searchText) {
+    items.value = {...items.value, ...newItems};
+    filter(searchText);
+  }
+
+  /// Resets the search state so the same query can be re-executed.
+  void resetSearchState() {
+    lastSearchQuery = '';
+  }
+
+  /// Whether [other] has the same config (ignoring mutable state).
+  ///
+  /// Used by the widget to avoid re-initializing when the DataSource is
+  /// recreated inline in the build method with the same callbacks.
+  bool hasSameConfig(SmartAutoSuggestDataSource<T> other) {
+    return identical(itemBuilder, other.itemBuilder) &&
+        identical(initialList, other.initialList) &&
+        identical(onSearch, other.onSearch) &&
+        searchMode == other.searchMode &&
+        debounce == other.debounce;
+  }
+
+  /// Releases resources used by this data source.
+  void dispose() {
+    _debounceTimer?.cancel();
+    items.dispose();
+    filteredItems.dispose();
+    isLoading.dispose();
+  }
 }

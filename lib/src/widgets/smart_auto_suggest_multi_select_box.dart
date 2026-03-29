@@ -163,8 +163,6 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   late SmartAutoSuggestMultiSelectController<T>? _ownedController;
   final FocusScopeNode _overlayNode = FocusScopeNode();
   final _focusStreamController = StreamController<int>.broadcast();
-  final _dynamicItemsController =
-      StreamController<Set<SmartAutoSuggestItem<T>>>.broadcast();
 
   SmartAutoSuggestSorter<T> get sorter =>
       widget.sorter ?? widget.defaultItemSorter;
@@ -183,18 +181,21 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   Set<SmartAutoSuggestItem<T>> get _selectedItems =>
       _multiController.selectedItems.value;
 
+  /// The data source manages items, filtered items, and loading state.
+  SmartAutoSuggestDataSource<T> get _dataSource => widget.dataSource;
+
   Size _boxSize = Size.zero;
-  final ValueNotifier<bool> isLoading = ValueNotifier(false);
-  String lastSearchLoaded = '';
-  Timer? _debounceTimer;
   bool _autoScrollScheduled = false;
 
-  late final ValueNotifier<Set<SmartAutoSuggestItem<T>>> _items;
-  late Set<SmartAutoSuggestItem<T>> _localItems;
+  /// Convenience accessors that delegate to DataSource.
+  Set<SmartAutoSuggestItem<T>> get _localItems =>
+      _dataSource.filteredItems.value;
+  ValueNotifier<bool> get isLoading => _dataSource.isLoading;
 
   void _updateLocalItems() {
     if (!mounted) return;
-    setState(() => _localItems = sorter(_searchText, _items.value));
+    _dataSource.filter(_searchText, sorter);
+    setState(() {});
     if (isOverlayVisible) _autoSelectFirstItem();
   }
 
@@ -211,9 +212,9 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
       _controller = _ownedController!.textController;
     }
 
-    _items = ValueNotifier(<SmartAutoSuggestItem<T>>{});
-    _localItems = <SmartAutoSuggestItem<T>>{};
-    isLoading.value = false;
+    _dataSource.activeSorter = sorter;
+    _dataSource.filteredItems.addListener(_onDataSourceChanged);
+    _dataSource.isLoading.addListener(_onDataSourceChanged);
 
     _multiController.selectedItems.addListener(_onSelectionChanged);
     _controller.addListener(_handleTextChanged);
@@ -226,14 +227,17 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
         _boxSize = box.size;
       }
 
-      if (widget.dataSource.initialList != null) {
-        final rawValues = widget.dataSource.initialList!(context);
-        _items.value = rawValues
-            .map((v) => widget.dataSource.itemBuilder(context, v))
-            .toSet();
-        _updateLocalItems();
-      }
+      _dataSource.initialize(context);
+      _dataSource.filter(_searchText, sorter);
     });
+  }
+
+  void _onDataSourceChanged() {
+    if (!mounted) return;
+    if (_entry?.mounted ?? false) {
+      _entry?.markNeedsBuild();
+    }
+    setState(() {});
   }
 
   void _onSelectionChanged() {
@@ -243,12 +247,12 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _debounceTimer?.cancel();
+    _dataSource.filteredItems.removeListener(_onDataSourceChanged);
+    _dataSource.isLoading.removeListener(_onDataSourceChanged);
     _multiController.selectedItems.removeListener(_onSelectionChanged);
     _focusNode.removeListener(_handleFocusChanged);
     _controller.removeListener(_handleTextChanged);
     _focusStreamController.close();
-    _dynamicItemsController.close();
     _unselectAll();
     _ownedController?.dispose();
     if (widget.focusNode == null) _focusNode.dispose();
@@ -288,13 +292,16 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
     }
 
     if (widget.dataSource != oldWidget.dataSource &&
-        widget.dataSource.initialList != null) {
-      final rawValues = widget.dataSource.initialList!(context);
-      _items.value = rawValues
-          .map((v) => widget.dataSource.itemBuilder(context, v))
-          .toSet();
-      _updateLocalItems();
-      _dynamicItemsController.add(_items.value);
+        !_dataSource.hasSameConfig(widget.dataSource)) {
+      oldWidget.dataSource.filteredItems.removeListener(_onDataSourceChanged);
+      oldWidget.dataSource.isLoading.removeListener(_onDataSourceChanged);
+      _dataSource.activeSorter = sorter;
+      _dataSource.filteredItems.addListener(_onDataSourceChanged);
+      _dataSource.isLoading.addListener(_onDataSourceChanged);
+      if (_dataSource.initialList != null) {
+        _dataSource.initialize(context);
+      }
+      _dataSource.filter(_searchText, sorter);
     }
 
     super.didUpdateWidget(oldWidget);
@@ -315,12 +322,9 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
     if (_controller.text.length < 2) setState(() {});
     _updateLocalItems();
 
-    if (widget.dataSource.searchMode == SmartAutoSuggestSearchMode.always &&
-        widget.dataSource.onSearch != null) {
-      _debounceTimer?.cancel();
-      _debounceTimer = Timer(widget.dataSource.debounce, () {
-        _buildSearchCallback()?.call(_searchText.trim());
-      });
+    if (_dataSource.searchMode == SmartAutoSuggestSearchMode.always &&
+        _dataSource.onSearch != null) {
+      _dataSource.scheduleSearch(context, _searchText.trim());
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -330,39 +334,8 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   }
 
   Future Function(String text)? _buildSearchCallback() {
-    if (widget.dataSource.onSearch != null) {
-      return (text) async {
-        if (widget.dataSource.debounce > Duration.zero &&
-            widget.dataSource.searchMode !=
-                SmartAutoSuggestSearchMode.always) {
-          await Future.delayed(widget.dataSource.debounce);
-        }
-        final currentText = _searchText.trim();
-        if (currentText.isNotEmpty &&
-            !lastSearchLoaded.startsWith(currentText) &&
-            text == currentText) {
-          lastSearchLoaded = currentText;
-          isLoading.value = true;
-          try {
-            final rawValues = await widget.dataSource.onSearch!(
-              context,
-              _items.value.map((i) => i.value).toList(),
-              text,
-            );
-            if (rawValues.isNotEmpty) {
-              final newItems = rawValues
-                  .map((v) => widget.dataSource.itemBuilder(context, v))
-                  .toSet();
-              _items.value = {..._items.value, ...newItems};
-              _localItems = sorter(_searchText, _items.value);
-            }
-          } catch (_) {
-            // Swallow errors
-          } finally {
-            isLoading.value = false;
-          }
-        }
-      };
+    if (_dataSource.onSearch != null) {
+      return (text) async => _dataSource.search(context, text);
     }
     return null;
   }
@@ -576,14 +549,12 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
                 waitingBuilder: widget.waitingBuilder,
                 tileHeight: widget.tileHeight,
                 direction: resolvedDirection,
-                isLoading: isLoading,
+                dataSource: _dataSource,
                 maxHeight: maxHeight,
                 node: _overlayNode,
                 controller: _controller,
-                items: _items,
                 itemBuilder: widget.itemBuilder,
                 focusStream: _focusStreamController.stream,
-                itemsStream: _dynamicItemsController.stream,
                 sorter: sorter,
                 onSelected: _onItemTapped,
                 noResultsFoundBuilder: widget.noResultsFoundBuilder,
