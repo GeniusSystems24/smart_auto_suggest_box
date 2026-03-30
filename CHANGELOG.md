@@ -1,5 +1,52 @@
 # ChangeLog
 
+## 0.11.0
+
+### Breaking Changes
+
+* **`SmartAutoSuggestDataSource` is now stateful** — the constructor is no longer
+  `const`. If you stored a `const SmartAutoSuggestDataSource(...)`, remove the
+  `const` keyword. All existing usage patterns (inline construction in `build`)
+  continue to work without changes thanks to the new `hasSameConfig()` check.
+
+### Features
+
+* **Stateful `SmartAutoSuggestDataSource`** — the data source now owns and
+  manages overlay state internally:
+  * `items` (`ValueNotifier<Set<SmartAutoSuggestItem<T>>>`) — all available
+    items (unfiltered).
+  * `filteredItems` (`ValueNotifier<Set<SmartAutoSuggestItem<T>>>`) — the
+    currently filtered/sorted items shown in the overlay.
+  * `isLoading` (`ValueNotifier<bool>`) — whether an async search is in
+    progress.
+
+* **External control** — you can now observe and manipulate the data source
+  from outside the widget:
+  * `filter(searchText, [sorter])` — apply sorter and update `filteredItems`.
+  * `search(context, searchText)` — trigger an async search programmatically.
+  * `setItems(newItems, searchText)` — replace all items and re-filter.
+  * `addItems(newItems, searchText)` — merge new items and re-filter.
+  * `resetSearchState()` — reset the last query so the same search can run
+    again.
+  * Listen to `dataSource.filteredItems` and `dataSource.isLoading` for
+    real-time state updates.
+
+* **Immediate overlay updates** — the overlay now listens directly to
+  `dataSource.filteredItems` and `dataSource.isLoading`, so tiles update
+  instantly when an async search completes (no manual refresh needed).
+
+* **`hasSameConfig()`** — prevents unnecessary re-initialization when the
+  `SmartAutoSuggestDataSource` is recreated inline in `build` methods with
+  the same callbacks and settings.
+
+### Internal
+
+* Removed internal `StreamController` for items in all three widgets
+  (`SmartAutoSuggestBox`, `SmartAutoSuggestView`,
+  `SmartAutoSuggestMultiSelectBox`).
+* Overlay build methods simplified from nested `ValueListenableBuilder` to
+  direct `DataSource` reads.
+
 ## 0.10.1
 
 ### Features

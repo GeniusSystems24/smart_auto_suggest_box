@@ -31,7 +31,7 @@ All share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.10.1
+  smart_auto_suggest_box: ^0.11.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -476,6 +476,8 @@ SmartAutoSuggestBox<String>(
 
 ## SmartAutoSuggestDataSource API
 
+### Configuration (constructor parameters)
+
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `itemBuilder` | `SmartAutoSuggestItem<T> Function(BuildContext, T)` | **required** | Converts raw `T` to `SmartAutoSuggestItem<T>` |
@@ -483,6 +485,63 @@ SmartAutoSuggestBox<String>(
 | `onSearch` | `Future<List<T>> Function(BuildContext, List<T>, String?)?` | `null` | Async search (returns raw values) |
 | `searchMode` | `SmartAutoSuggestSearchMode` | `onNoLocalResults` | When to trigger `onSearch` |
 | `debounce` | `Duration` | `400ms` | Debounce before calling `onSearch` |
+
+### State (observable)
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `items` | `ValueNotifier<Set<SmartAutoSuggestItem<T>>>` | All available items (unfiltered) |
+| `filteredItems` | `ValueNotifier<Set<SmartAutoSuggestItem<T>>>` | Filtered/sorted items shown in overlay |
+| `isLoading` | `ValueNotifier<bool>` | Whether an async search is in progress |
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `filter(searchText, [sorter])` | Apply sorter and update `filteredItems` |
+| `search(context, searchText)` | Trigger an async search via `onSearch` |
+| `setItems(newItems, searchText)` | Replace all items and re-filter |
+| `addItems(newItems, searchText)` | Merge new items into existing set and re-filter |
+| `resetSearchState()` | Reset last query so the same search can run again |
+| `dispose()` | Release resources (ValueNotifiers, timers) |
+
+### External Control
+
+You can observe and control the data source from outside the widget:
+
+```dart
+final dataSource = SmartAutoSuggestDataSource<String>(
+  itemBuilder: (context, value) => SmartAutoSuggestItem(
+    value: value,
+    label: value[0].toUpperCase() + value.substring(1),
+  ),
+  initialList: (context) => ['apple', 'banana', 'cherry'],
+  onSearch: (context, current, searchText) async {
+    return await api.search(searchText);
+  },
+);
+
+// Observe filtered items
+dataSource.filteredItems.addListener(() {
+  print('Filtered: ${dataSource.filteredItems.value.length} items');
+});
+
+// Observe loading state
+dataSource.isLoading.addListener(() {
+  print('Loading: ${dataSource.isLoading.value}');
+});
+
+// Add items programmatically
+dataSource.addItems({
+  SmartAutoSuggestItem(value: 'date', label: 'Date'),
+}, 'searchText');
+
+// Pass to widget
+SmartAutoSuggestBox<String>(
+  dataSource: dataSource,
+  onSelected: (item) {},
+);
+```
 
 ## SmartAutoSuggestView unique parameters
 
