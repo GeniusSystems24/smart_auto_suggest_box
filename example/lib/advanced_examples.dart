@@ -8,63 +8,8 @@ import 'data.dart';
 // Advanced examples
 // ─────────────────────────────────────────────────────────────────────────────
 
-class AdvancedExamplesDemo extends StatefulWidget {
+class AdvancedExamplesDemo extends StatelessWidget {
   const AdvancedExamplesDemo({super.key});
-
-  @override
-  State<AdvancedExamplesDemo> createState() => _AdvancedExamplesDemoState();
-}
-
-class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
-  String? _bottomSheetSelected;
-
-  // ── 8. External DataSource control ──────────────────────────────────
-  late final SmartAutoSuggestDataSource<String> _externalDataSource;
-  int _filteredCount = 0;
-  bool _dsLoading = false;
-
-  void _initExternalDataSource() {
-    _externalDataSource = SmartAutoSuggestDataSource<String>(
-      itemBuilder: fruitItemBuilder,
-      initialList: (context) => fruits,
-      onSearch: (context, current, searchText) async {
-        await Future.delayed(const Duration(seconds: 1));
-        return fruits
-            .where(
-                (f) => f.toLowerCase().contains((searchText ?? '').toLowerCase()))
-            .toList();
-      },
-      debounce: const Duration(milliseconds: 500),
-    );
-    _externalDataSource.filteredItems.addListener(_onFilteredChanged);
-    _externalDataSource.isLoading.addListener(_onLoadingChanged);
-  }
-
-  void _onFilteredChanged() {
-    setState(() {
-      _filteredCount = _externalDataSource.filteredItems.value.length;
-    });
-  }
-
-  void _onLoadingChanged() {
-    setState(() {
-      _dsLoading = _externalDataSource.isLoading.value;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _initExternalDataSource();
-  }
-
-  @override
-  void dispose() {
-    _externalDataSource.filteredItems.removeListener(_onFilteredChanged);
-    _externalDataSource.isLoading.removeListener(_onLoadingChanged);
-    _externalDataSource.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,11 +32,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
           FilledButton.icon(
             onPressed: () => _openBottomSheet(context),
             icon: const Icon(Icons.arrow_upward),
-            label: Text(
-              _bottomSheetSelected != null
-                  ? 'Selected: $_bottomSheetSelected'
-                  : 'Open BottomSheet',
-            ),
+            label: const Text('Open BottomSheet'),
           ),
           const SizedBox(height: 32),
 
@@ -302,8 +243,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                 value: value,
                 label: value[0].toUpperCase() + value.substring(1),
                 builder: (context, searchText) {
-                  final label =
-                      value[0].toUpperCase() + value.substring(1);
+                  final label = value[0].toUpperCase() + value.substring(1);
                   final emoji = fruitEmojis[value] ?? '';
                   return ListTile(
                     leading: Text(emoji, style: const TextStyle(fontSize: 20)),
@@ -359,8 +299,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                 value: value,
                 label: value[0].toUpperCase() + value.substring(1),
                 builder: (context, searchText) {
-                  final label =
-                      value[0].toUpperCase() + value.substring(1);
+                  final label = value[0].toUpperCase() + value.substring(1);
                   final emoji = fruitEmojis[value] ?? '';
                   final colors = [
                     Colors.red,
@@ -403,8 +342,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                                 '${label.length} characters',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color:
-                                      Theme.of(context).colorScheme.outline,
+                                  color: Theme.of(context).colorScheme.outline,
                                 ),
                               ),
                             ],
@@ -457,8 +395,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
           SmartAutoSuggestBox<String>(
             dataSource: SmartAutoSuggestDataSource(
               itemBuilder: (context, value) {
-                final label =
-                    value[0].toUpperCase() + value.substring(1);
+                final label = value[0].toUpperCase() + value.substring(1);
                 return SmartAutoSuggestItem(
                   key: value,
                   value: value,
@@ -660,8 +597,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                 value: value,
                 label: value[0].toUpperCase() + value.substring(1),
                 builder: (context, searchText) {
-                  final label =
-                      value[0].toUpperCase() + value.substring(1);
+                  final label = value[0].toUpperCase() + value.substring(1);
                   return ListTile(
                     dense: true,
                     leading: Text(
@@ -721,7 +657,7 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                   ),
                   const SizedBox(height: 8),
                   SmartAutoSuggestBox<String>(
-                    // No theme parameter → uses ThemeData extension
+                    // No theme parameter -> uses ThemeData extension
                     dataSource: SmartAutoSuggestDataSource(
                       itemBuilder: fruitItemBuilder,
                       initialList: (context) => fruits,
@@ -795,101 +731,6 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                 prefixIcon: const Icon(Icons.list_alt),
               ),
               onSelected: (item) {},
-            ),
-          ),
-          // ── 8. External DataSource Control ─────────────────────────────
-          sectionHeader(
-            context,
-            title: '8. External DataSource Control',
-            subtitle:
-                'Observe filteredItems and isLoading from outside. '
-                'Add items or reset search state programmatically.',
-          ),
-          const SizedBox(height: 8),
-          SmartAutoSuggestBox<String>(
-            dataSource: _externalDataSource,
-            decoration: const InputDecoration(
-              labelText: 'Search fruits',
-              hintText: 'Type to search (async)...',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.manage_search),
-            ),
-            onSelected: (item) {},
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'DataSource State',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        _dsLoading
-                            ? Icons.hourglass_top
-                            : Icons.check_circle_outline,
-                        size: 16,
-                        color: _dsLoading ? Colors.orange : Colors.green,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(_dsLoading ? 'Loading...' : 'Idle'),
-                      const SizedBox(width: 24),
-                      const Icon(Icons.filter_list, size: 16),
-                      const SizedBox(width: 6),
-                      Text('Filtered: $_filteredCount items'),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          _externalDataSource.addItems(
-                            {
-                              fruitItemBuilder(context, 'kiwi'),
-                              fruitItemBuilder(context, 'mango'),
-                            },
-                            '',
-                          );
-                          ScaffoldMessenger.of(context)
-                            ..clearSnackBars()
-                            ..showSnackBar(
-                              const SnackBar(
-                                content: Text('Added kiwi & mango'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                        },
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Add items'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          _externalDataSource.resetSearchState();
-                          ScaffoldMessenger.of(context)
-                            ..clearSnackBars()
-                            ..showSnackBar(
-                              const SnackBar(
-                                content: Text('Search state reset'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                        },
-                        icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Reset search'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
             ),
           ),
           const SizedBox(height: 48),
@@ -970,7 +811,6 @@ class _AdvancedExamplesDemoState extends State<AdvancedExamplesDemo> {
                       ),
                       onSelected: (item) {
                         if (item != null) {
-                          setState(() => _bottomSheetSelected = item.label);
                           Navigator.pop(context);
                         }
                       },

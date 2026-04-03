@@ -7,34 +7,8 @@ import 'data.dart';
 // SmartAutoSuggestBox demo (floating overlay)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class SmartAutoSuggestBoxDemo extends StatefulWidget {
+class SmartAutoSuggestBoxDemo extends StatelessWidget {
   const SmartAutoSuggestBoxDemo({super.key});
-
-  @override
-  State<SmartAutoSuggestBoxDemo> createState() =>
-      _SmartAutoSuggestBoxDemoState();
-}
-
-class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
-  SmartAutoSuggestBoxDirection _direction =
-      SmartAutoSuggestBoxDirection.bottom;
-  String? _selected;
-
-  final _smartController = SmartAutoSuggestController<String>();
-
-  @override
-  void initState() {
-    super.initState();
-    _smartController.selectedItem.addListener(() {
-      setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _smartController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,40 +20,6 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          // Direction selector
-          const Text(
-            'Dropdown Direction:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<SmartAutoSuggestBoxDirection>(
-            segments: const [
-              ButtonSegment(
-                value: SmartAutoSuggestBoxDirection.bottom,
-                label: Text('Bottom'),
-                icon: Icon(Icons.arrow_downward),
-              ),
-              ButtonSegment(
-                value: SmartAutoSuggestBoxDirection.top,
-                label: Text('Top'),
-                icon: Icon(Icons.arrow_upward),
-              ),
-              ButtonSegment(
-                value: SmartAutoSuggestBoxDirection.start,
-                label: Text('Start'),
-                icon: Icon(Icons.arrow_back),
-              ),
-              ButtonSegment(
-                value: SmartAutoSuggestBoxDirection.end,
-                label: Text('End'),
-                icon: Icon(Icons.arrow_forward),
-              ),
-            ],
-            selected: {_direction},
-            onSelectionChanged: (v) => setState(() => _direction = v.first),
-          ),
-          const SizedBox(height: 24),
-
           // ── 1. DataSource with initialList ───────────────────────────────
           sectionHeader(
             context,
@@ -92,31 +32,14 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
               itemBuilder: fruitItemBuilder,
               initialList: (context) => fruits,
             ),
-            direction: _direction,
             decoration: const InputDecoration(
               labelText: 'Search fruits',
               hintText: 'Type to search...',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.search),
             ),
-            onSelected: (item) {
-              if (item != null) setState(() => _selected = item.label);
-            },
-            onChanged: (text, reason) {
-              if (reason == FluentTextChangedReason.cleared) {
-                setState(() => _selected = null);
-              }
-            },
+            onSelected: (item) {},
           ),
-          if (_selected != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Selected: $_selected',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ],
           const SizedBox(height: 32),
 
           // ── 2. Async onSearch ────────────────────────────────────────────
@@ -135,14 +58,14 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
               onSearch: (context, current, searchText) async {
                 await Future.delayed(const Duration(seconds: 1));
                 return fruits
-                    .where((f) => f.toLowerCase().contains(
-                        (searchText ?? '').toLowerCase()))
+                    .where((f) => f
+                        .toLowerCase()
+                        .contains((searchText ?? '').toLowerCase()))
                     .toList();
               },
               searchMode: SmartAutoSuggestSearchMode.onNoLocalResults,
               debounce: const Duration(milliseconds: 500),
             ),
-            direction: _direction,
             decoration: const InputDecoration(
               labelText: 'Server search',
               hintText: 'Type to fetch from server...',
@@ -172,7 +95,6 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
               searchMode: SmartAutoSuggestSearchMode.always,
               debounce: const Duration(milliseconds: 500),
             ),
-            direction: _direction,
             decoration: const InputDecoration(
               labelText: 'Always search',
               hintText: 'Every keystroke triggers server search...',
@@ -203,7 +125,6 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
               ),
               initialList: (context) => fruits,
             ),
-            direction: _direction,
             decoration: const InputDecoration(
               labelText: 'Search fruits',
               hintText: 'Select a fruit...',
@@ -224,7 +145,8 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
                     vertical: 8,
                   ),
                   leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     child: Text(emoji, style: const TextStyle(fontSize: 18)),
                   ),
                   title: Text(item.label),
@@ -233,7 +155,6 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
                     size: 18,
                     color: Theme.of(context).colorScheme.outline,
                   ),
-                  // onTap: () {},
                 ),
               );
             },
@@ -251,12 +172,10 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
           ),
           const SizedBox(height: 8),
           SmartAutoSuggestBox<String>(
-            smartController: _smartController,
             dataSource: SmartAutoSuggestDataSource(
               itemBuilder: fruitItemBuilder,
               initialList: (context) => fruits,
             ),
-            direction: _direction,
             decoration: const InputDecoration(
               labelText: 'Search fruits',
               hintText: 'Select a fruit...',
@@ -265,31 +184,39 @@ class _SmartAutoSuggestBoxDemoState extends State<SmartAutoSuggestBoxDemo> {
             ),
             onSelected: (item) {},
           ),
+          const SizedBox(height: 32),
+
+          // ── 6. Dropdown Directions ──────────────────────────────────────
+          sectionHeader(
+            context,
+            title: '6. Dropdown Directions',
+            subtitle: 'Each box uses a different direction.',
+          ),
           const SizedBox(height: 8),
-          if (_smartController.selectedItem.value != null)
-            Card(
-              child: ListTile(
-                title: Text(
-                  'Selected: ${_smartController.selectedItem.value!.label}',
-                ),
-                subtitle: Text(
-                  'Value: ${_smartController.selectedItem.value!.value}',
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => _smartController.clearSelection(),
-                ),
-              ),
-            )
-          else
-            const Card(
-              child: ListTile(
-                title: Text('No selection'),
-                subtitle: Text(
-                  'Select an item above to see controller state',
-                ),
+          for (final dir in SmartAutoSuggestBoxDirection.values) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 4),
+              child: Text(
+                'Direction: ${dir.name}',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
+            SmartAutoSuggestBox<String>(
+              dataSource: SmartAutoSuggestDataSource(
+                itemBuilder: fruitItemBuilder,
+                initialList: (context) => fruits,
+              ),
+              direction: dir,
+              decoration: InputDecoration(
+                labelText: 'Search (${dir.name})',
+                hintText: 'Type to search...',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.search),
+              ),
+              onSelected: (item) {},
+            ),
+            const SizedBox(height: 16),
+          ],
           const SizedBox(height: 48),
         ],
       ),

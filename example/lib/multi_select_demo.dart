@@ -7,29 +7,8 @@ import 'data.dart';
 // SmartAutoSuggestMultiSelectBox demo
 // ─────────────────────────────────────────────────────────────────────────────
 
-class MultiSelectDemo extends StatefulWidget {
+class MultiSelectDemo extends StatelessWidget {
   const MultiSelectDemo({super.key});
-
-  @override
-  State<MultiSelectDemo> createState() => _MultiSelectDemoState();
-}
-
-class _MultiSelectDemoState extends State<MultiSelectDemo> {
-  final _controllerDemo = SmartAutoSuggestMultiSelectController<String>();
-
-  @override
-  void initState() {
-    super.initState();
-    _controllerDemo.selectedItems.addListener(() {
-      setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _controllerDemo.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,18 +40,7 @@ class _MultiSelectDemoState extends State<MultiSelectDemo> {
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.search),
             ),
-            onSelectionChanged: (selected) {
-              ScaffoldMessenger.of(context)
-                ..clearSnackBars()
-                ..showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Selected: ${selected.map((e) => e.label).join(', ')}',
-                    ),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-            },
+            onSelectionChanged: (selected) {},
           ),
           const SizedBox(height: 32),
 
@@ -98,16 +66,7 @@ class _MultiSelectDemoState extends State<MultiSelectDemo> {
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.checklist),
             ),
-            onSelectionChanged: (selected) {
-              ScaffoldMessenger.of(context)
-                ..clearSnackBars()
-                ..showSnackBar(
-                  SnackBar(
-                    content: Text('${selected.length}/5 selected'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-            },
+            onSelectionChanged: (selected) {},
           ),
           const SizedBox(height: 32),
 
@@ -215,7 +174,6 @@ class _MultiSelectDemoState extends State<MultiSelectDemo> {
           ),
           const SizedBox(height: 8),
           SmartAutoSuggestMultiSelectBox<String>(
-            smartController: _controllerDemo,
             dataSource: SmartAutoSuggestDataSource(
               itemBuilder: fruitItemBuilder,
               initialList: (context) => fruits,
@@ -227,48 +185,6 @@ class _MultiSelectDemoState extends State<MultiSelectDemo> {
               prefixIcon: Icon(Icons.search),
             ),
             onSelectionChanged: (selected) {},
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Selected: ${_controllerDemo.selectedItems.value.length}',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  if (_controllerDemo.selectedItems.value.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: _controllerDemo.selectedItems.value
-                          .map(
-                            (item) => Chip(
-                              label: Text(item.label),
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 8),
-                    FilledButton.tonalIcon(
-                      onPressed: () => _controllerDemo.clearAll(),
-                      icon: const Icon(Icons.clear_all, size: 18),
-                      label: const Text('Clear all'),
-                    ),
-                  ] else
-                    Text(
-                      'No selection yet',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                    ),
-                ],
-              ),
-            ),
           ),
           const SizedBox(height: 32),
 
