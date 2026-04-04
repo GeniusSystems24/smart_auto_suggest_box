@@ -437,7 +437,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
 
   /// Search callback — delegates to DataSource.
   Future Function(String text)? _buildSearchCallback() {
-    if (_dataSource.onSearch != null && !_ownsDataSource) {
+    if (_dataSource.onSearch != null) {
       return (text) async => _dataSource.search(context, text);
     }
     return null;

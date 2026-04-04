@@ -645,7 +645,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   /// path and the deprecated [onNoResultsFound] path.
   Future Function(String text)? _buildSearchCallback() {
     // New data source path — delegate to DataSource
-    if (_dataSource.onSearch != null && !_ownsDataSource) {
+    if (_dataSource.onSearch != null) {
       return (text) async => _dataSource.search(context, text);
     }
 

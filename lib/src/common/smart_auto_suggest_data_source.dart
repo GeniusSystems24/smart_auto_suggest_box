@@ -131,25 +131,22 @@ class SmartAutoSuggestDataSource<T> {
 
   /// Performs an async search using [onSearch].
   ///
-  /// After results arrive, merges new items into [items] and re-filters.
-  /// The overlay updates automatically via [filteredItems].
+  /// Results are **merged** into [items] (never replace), so all data
+  /// accumulated across multiple searches is retained.  After merging,
+  /// [filter] is called so [filteredItems] shows only the items that
+  /// match the current query.
+  ///
+  /// The overlay updates automatically because it listens to
+  /// [filteredItems] and [isLoading].
   Future<void> search(
     BuildContext context,
     String searchText,
   ) async {
     if (onSearch == null) return;
 
-    if (debounce > Duration.zero &&
-        searchMode != SmartAutoSuggestSearchMode.always) {
-      await Future.delayed(debounce);
-    }
-
     final trimmed = searchText.trim();
     if (trimmed.isEmpty) return;
-    if (lastSearchQuery.startsWith(trimmed) &&
-        trimmed == lastSearchQuery) {
-      return;
-    }
+    if (trimmed == lastSearchQuery) return;
 
     lastSearchQuery = trimmed;
     isLoading.value = true;
@@ -163,10 +160,12 @@ class SmartAutoSuggestDataSource<T> {
         final newItems =
             rawValues.map((v) => itemBuilder(context, v)).toSet();
         items.value = {...items.value, ...newItems};
-        filter(searchText);
       }
+      // Always re-filter so the overlay shows only matching items,
+      // even when the server returned no new results.
+      filter(searchText);
     } catch (_) {
-      // Swallow errors
+      // Swallow errors — overlay will keep current state.
     } finally {
       isLoading.value = false;
     }
