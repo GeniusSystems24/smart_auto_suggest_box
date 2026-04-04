@@ -325,6 +325,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
 
     _dataSource.filteredItems.addListener(_onDataSourceChanged);
     _dataSource.isLoading.addListener(_onDataSourceChanged);
+    _dataSource.errorMessage.addListener(_onDataSourceChanged);
 
     _controller.addListener(_handleTextChanged);
     _focusNode.addListener(_handleFocusChanged);
@@ -348,6 +349,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
   void dispose() {
     _dataSource.filteredItems.removeListener(_onDataSourceChanged);
     _dataSource.isLoading.removeListener(_onDataSourceChanged);
+    _dataSource.errorMessage.removeListener(_onDataSourceChanged);
     if (_ownsDataSource) _dataSource.dispose();
     _focusNode.removeListener(_handleFocusChanged);
     _controller.removeListener(_handleTextChanged);
@@ -390,6 +392,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
             _dataSource.hasSameConfig(widget.dataSource!))) {
       _dataSource.filteredItems.removeListener(_onDataSourceChanged);
       _dataSource.isLoading.removeListener(_onDataSourceChanged);
+      _dataSource.errorMessage.removeListener(_onDataSourceChanged);
       if (_ownsDataSource) _dataSource.dispose();
 
       if (widget.dataSource != null) {
@@ -404,6 +407,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
       _dataSource.activeSorter = sorter;
       _dataSource.filteredItems.addListener(_onDataSourceChanged);
       _dataSource.isLoading.addListener(_onDataSourceChanged);
+      _dataSource.errorMessage.addListener(_onDataSourceChanged);
 
       if (widget.dataSource?.initialList != null) {
         _dataSource.initialize(context);
@@ -685,6 +689,7 @@ class _SmartAutoSuggestViewListState<T>
     });
     widget.dataSource.filteredItems.addListener(_onDataChanged);
     widget.dataSource.isLoading.addListener(_onDataChanged);
+    widget.dataSource.errorMessage.addListener(_onDataChanged);
   }
 
   void _onDataChanged() {
@@ -696,6 +701,7 @@ class _SmartAutoSuggestViewListState<T>
     _focusSub.cancel();
     widget.dataSource.filteredItems.removeListener(_onDataChanged);
     widget.dataSource.isLoading.removeListener(_onDataChanged);
+    widget.dataSource.errorMessage.removeListener(_onDataChanged);
     _scrollController.dispose();
     super.dispose();
   }
@@ -761,6 +767,39 @@ class _SmartAutoSuggestViewListState<T>
                   ),
                 ],
               ),
+        ),
+      );
+    }
+
+    final errorMsg = widget.dataSource.errorMessage.value;
+    if (errorMsg != null) {
+      final errorStyle = sat?.errorSubtitleStyle ??
+          TextStyle(fontSize: 14.0, color: appTheme.colorScheme.outline);
+      final errorIconColor = sat?.errorIconColor ??
+          appTheme.colorScheme.error;
+      return FocusScope(
+        node: widget.node,
+        child: Container(
+          constraints: BoxConstraints(maxHeight: widget.maxHeight),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            border: Border(top: listBorder),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  Icons.error_outline,
+                  color: errorIconColor,
+                ),
+                title: Text(tr.searchError),
+                subtitle: Text(errorMsg),
+                subtitleTextStyle: errorStyle,
+              ),
+            ],
+          ),
         ),
       );
     }

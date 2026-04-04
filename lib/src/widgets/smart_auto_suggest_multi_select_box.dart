@@ -215,6 +215,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
     _dataSource.activeSorter = sorter;
     _dataSource.filteredItems.addListener(_onDataSourceChanged);
     _dataSource.isLoading.addListener(_onDataSourceChanged);
+    _dataSource.errorMessage.addListener(_onDataSourceChanged);
 
     _multiController.selectedItems.addListener(_onSelectionChanged);
     _controller.addListener(_handleTextChanged);
@@ -250,6 +251,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
     WidgetsBinding.instance.removeObserver(this);
     _dataSource.filteredItems.removeListener(_onDataSourceChanged);
     _dataSource.isLoading.removeListener(_onDataSourceChanged);
+    _dataSource.errorMessage.removeListener(_onDataSourceChanged);
     _multiController.selectedItems.removeListener(_onSelectionChanged);
     _focusNode.removeListener(_handleFocusChanged);
     _controller.removeListener(_handleTextChanged);
@@ -296,9 +298,11 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
         !_dataSource.hasSameConfig(widget.dataSource)) {
       oldWidget.dataSource.filteredItems.removeListener(_onDataSourceChanged);
       oldWidget.dataSource.isLoading.removeListener(_onDataSourceChanged);
+      oldWidget.dataSource.errorMessage.removeListener(_onDataSourceChanged);
       _dataSource.activeSorter = sorter;
       _dataSource.filteredItems.addListener(_onDataSourceChanged);
       _dataSource.isLoading.addListener(_onDataSourceChanged);
+      _dataSource.errorMessage.addListener(_onDataSourceChanged);
       if (_dataSource.initialList != null) {
         _dataSource.initialize(context);
       }

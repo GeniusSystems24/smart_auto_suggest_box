@@ -465,6 +465,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     // Listen to DataSource changes to rebuild overlay
     _dataSource.filteredItems.addListener(_onDataSourceChanged);
     _dataSource.isLoading.addListener(_onDataSourceChanged);
+    _dataSource.errorMessage.addListener(_onDataSourceChanged);
 
     _smartController?.selectedItem.addListener(_onSelectedItemChanged);
 
@@ -510,6 +511,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     _debounceTimer?.cancel();
     _dataSource.filteredItems.removeListener(_onDataSourceChanged);
     _dataSource.isLoading.removeListener(_onDataSourceChanged);
+    _dataSource.errorMessage.removeListener(_onDataSourceChanged);
     if (_ownsDataSource) _dataSource.dispose();
     _smartController?.selectedItem.removeListener(_onSelectedItemChanged);
     _focusNode.removeListener(_handleFocusChanged);
@@ -573,6 +575,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
             _dataSource.hasSameConfig(widget.dataSource!))) {
       _dataSource.filteredItems.removeListener(_onDataSourceChanged);
       _dataSource.isLoading.removeListener(_onDataSourceChanged);
+      _dataSource.errorMessage.removeListener(_onDataSourceChanged);
       if (_ownsDataSource) _dataSource.dispose();
 
       if (widget.dataSource != null) {
@@ -588,6 +591,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
       _dataSource.activeSorter = sorter;
       _dataSource.filteredItems.addListener(_onDataSourceChanged);
       _dataSource.isLoading.addListener(_onDataSourceChanged);
+      _dataSource.errorMessage.addListener(_onDataSourceChanged);
 
       if (widget.dataSource?.initialList != null) {
         _dataSource.initialize(context);
@@ -1280,6 +1284,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
     // Listen to DataSource changes to rebuild overlay
     widget.dataSource.filteredItems.addListener(_onDataChanged);
     widget.dataSource.isLoading.addListener(_onDataChanged);
+    widget.dataSource.errorMessage.addListener(_onDataChanged);
   }
 
   void _onDataChanged() {
@@ -1291,6 +1296,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
     focusSubscription.cancel();
     widget.dataSource.filteredItems.removeListener(_onDataChanged);
     widget.dataSource.isLoading.removeListener(_onDataChanged);
+    widget.dataSource.errorMessage.removeListener(_onDataChanged);
     scrollController.dispose();
     super.dispose();
   }
@@ -1439,6 +1445,30 @@ class _SmartAutoSuggestBoxOverlayState<T>
                             ),
                           ],
                         );
+                  }
+                  final errorMsg = widget.dataSource.errorMessage.value;
+                  if (errorMsg != null) {
+                    final errorStyle = sat?.errorSubtitleStyle ??
+                        TextStyle(
+                          fontSize: 14.0,
+                          color: appTheme.colorScheme.outline,
+                        );
+                    final errorIconColor = sat?.errorIconColor ??
+                        appTheme.colorScheme.error;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: Icon(
+                            Icons.error_outline,
+                            color: errorIconColor,
+                          ),
+                          title: Text(tr.searchError),
+                          subtitle: Text(errorMsg),
+                          subtitleTextStyle: errorStyle,
+                        ),
+                      ],
+                    );
                   }
                   final search = widget.controller.value;
                   final cursorOffset = search.selection.baseOffset;

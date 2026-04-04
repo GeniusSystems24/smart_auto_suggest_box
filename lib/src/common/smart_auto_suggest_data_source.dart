@@ -90,6 +90,13 @@ class SmartAutoSuggestDataSource<T> {
   /// Whether an async search is in progress.
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
 
+  /// Error message from the last failed [onSearch] call.
+  ///
+  /// Set when [onSearch] throws an exception; cleared when a new search
+  /// starts successfully. The overlay listens to this to display an
+  /// error card instead of items.
+  final ValueNotifier<String?> errorMessage = ValueNotifier(null);
+
   /// Tracks the last search query to avoid duplicate requests.
   String lastSearchQuery = '';
 
@@ -149,6 +156,7 @@ class SmartAutoSuggestDataSource<T> {
     if (trimmed == lastSearchQuery) return;
 
     lastSearchQuery = trimmed;
+    errorMessage.value = null;
     isLoading.value = true;
     try {
       final rawValues = await onSearch!(
@@ -164,8 +172,8 @@ class SmartAutoSuggestDataSource<T> {
       // Always re-filter so the overlay shows only matching items,
       // even when the server returned no new results.
       filter(searchText);
-    } catch (_) {
-      // Swallow errors — overlay will keep current state.
+    } catch (e) {
+      errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
     }
@@ -214,5 +222,6 @@ class SmartAutoSuggestDataSource<T> {
     items.dispose();
     filteredItems.dispose();
     isLoading.dispose();
+    errorMessage.dispose();
   }
 }

@@ -2,5 +2,7 @@
     "searchingInServer": "正在服务器中搜索...",
     "searchingInServerHint": "请稍候，我们正在从服务器获取结果。",
     "noResultsFound": "未找到结果",
-    "noResultsFoundHint": "我们无法找到与您的搜索匹配的结果。请尝试不同的查询。"
+    "noResultsFoundHint": "我们无法找到与您的搜索匹配的结果。请尝试不同的查询。",
+    "searchError": "发生了错误",
+    "searchErrorHint": "搜索时出了问题。请重试。"
 }

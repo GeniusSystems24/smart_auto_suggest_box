@@ -2,5 +2,7 @@
     "searchingInServer": "サーバーを検索中...",
     "searchingInServerHint": "サーバーから結果を取得している間、しばらくお待ちください。",
     "noResultsFound": "結果が見つかりません",
-    "noResultsFoundHint": "検索に一致する結果が見つかりませんでした。別のクエリを試してください。"
+    "noResultsFoundHint": "検索に一致する結果が見つかりませんでした。別のクエリを試してください。",
+    "searchError": "エラーが発生しました",
+    "searchErrorHint": "検索中に問題が発生しました。もう一度お試しください。"
 }

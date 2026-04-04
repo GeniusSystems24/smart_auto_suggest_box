@@ -96,6 +96,26 @@ class SmartAutoSuggestBoxLocalizations {
       args: [],
     );
   }
+
+  /// `An error occurred`
+  String get searchError {
+    return Intl.message(
+      'An error occurred',
+      name: 'searchError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Something went wrong while searching. Please try again.`
+  String get searchErrorHint {
+    return Intl.message(
+      'Something went wrong while searching. Please try again.',
+      name: 'searchErrorHint',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate

@@ -1,5 +1,24 @@
 # ChangeLog
 
+## 0.13.0
+
+### New Features
+
+* **Error state in overlay** — when `onSearch` throws an exception, the overlay
+  now displays a localized error message with an error icon instead of silently
+  swallowing the error. The error is automatically cleared when a new search
+  starts.
+
+* **`errorMessage` on `SmartAutoSuggestDataSource`** — new `ValueNotifier<String?>`
+  that holds the error message from the last failed search. Listen to it to
+  observe error state externally.
+
+* **`errorSubtitleStyle` and `errorIconColor` on `SmartAutoSuggestTheme`** —
+  new theme properties for customizing the error card appearance.
+
+* **`searchError` / `searchErrorHint` localizations** — new localized strings
+  for the error state across all 13 supported languages.
+
 ## 0.12.0
 
 ### Bug Fixes

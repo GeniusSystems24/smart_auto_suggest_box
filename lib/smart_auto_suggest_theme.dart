@@ -72,6 +72,12 @@ class SmartAutoSuggestTheme extends ThemeExtension<SmartAutoSuggestTheme> {
   /// Text style for "searching in server" subtitle.
   final TextStyle? loadingSubtitleStyle;
 
+  /// Text style for the error subtitle shown when [onSearch] throws.
+  final TextStyle? errorSubtitleStyle;
+
+  /// Icon color for the error state.
+  final Color? errorIconColor;
+
   /// Height of the progress indicator shown during loading.
   final double? progressIndicatorHeight;
 
@@ -103,6 +109,8 @@ class SmartAutoSuggestTheme extends ThemeExtension<SmartAutoSuggestTheme> {
     this.tileSubtitleStyle,
     this.noResultsSubtitleStyle,
     this.loadingSubtitleStyle,
+    this.errorSubtitleStyle,
+    this.errorIconColor,
     this.progressIndicatorHeight,
     this.progressIndicatorColor,
     this.dividerIndent,
@@ -145,6 +153,8 @@ class SmartAutoSuggestTheme extends ThemeExtension<SmartAutoSuggestTheme> {
       tileSubtitleStyle: TextStyle(color: outline),
       noResultsSubtitleStyle: TextStyle(color: outline),
       loadingSubtitleStyle: TextStyle(fontSize: 14.0, color: outline),
+      errorSubtitleStyle: TextStyle(fontSize: 14.0, color: outline),
+      errorIconColor: const Color(0xFFB3261E),
       progressIndicatorHeight: 4.0,
       progressIndicatorColor: null, // use default theme
       dividerIndent: 12.0,
@@ -188,6 +198,8 @@ class SmartAutoSuggestTheme extends ThemeExtension<SmartAutoSuggestTheme> {
       tileSubtitleStyle: TextStyle(color: outline),
       noResultsSubtitleStyle: TextStyle(color: outline),
       loadingSubtitleStyle: TextStyle(fontSize: 14.0, color: outline),
+      errorSubtitleStyle: TextStyle(fontSize: 14.0, color: outline),
+      errorIconColor: const Color(0xFFF2B8B5),
       progressIndicatorHeight: 4.0,
       progressIndicatorColor: null,
       dividerIndent: 12.0,
@@ -210,6 +222,8 @@ class SmartAutoSuggestTheme extends ThemeExtension<SmartAutoSuggestTheme> {
     TextStyle? tileSubtitleStyle,
     TextStyle? noResultsSubtitleStyle,
     TextStyle? loadingSubtitleStyle,
+    TextStyle? errorSubtitleStyle,
+    Color? errorIconColor,
     double? progressIndicatorHeight,
     Color? progressIndicatorColor,
     double? dividerIndent,
@@ -231,6 +245,8 @@ class SmartAutoSuggestTheme extends ThemeExtension<SmartAutoSuggestTheme> {
       noResultsSubtitleStyle:
           noResultsSubtitleStyle ?? this.noResultsSubtitleStyle,
       loadingSubtitleStyle: loadingSubtitleStyle ?? this.loadingSubtitleStyle,
+      errorSubtitleStyle: errorSubtitleStyle ?? this.errorSubtitleStyle,
+      errorIconColor: errorIconColor ?? this.errorIconColor,
       progressIndicatorHeight:
           progressIndicatorHeight ?? this.progressIndicatorHeight,
       progressIndicatorColor:
@@ -271,6 +287,9 @@ class SmartAutoSuggestTheme extends ThemeExtension<SmartAutoSuggestTheme> {
           TextStyle.lerp(noResultsSubtitleStyle, other.noResultsSubtitleStyle, t),
       loadingSubtitleStyle:
           TextStyle.lerp(loadingSubtitleStyle, other.loadingSubtitleStyle, t),
+      errorSubtitleStyle:
+          TextStyle.lerp(errorSubtitleStyle, other.errorSubtitleStyle, t),
+      errorIconColor: Color.lerp(errorIconColor, other.errorIconColor, t),
       progressIndicatorHeight: _lerpDouble(
         progressIndicatorHeight,
         other.progressIndicatorHeight,

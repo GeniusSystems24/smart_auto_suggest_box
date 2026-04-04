@@ -2,5 +2,7 @@
     "searchingInServer": "Recherche sur le serveur...",
     "searchingInServerHint": "Veuillez patienter pendant que nous récupérons les résultats du serveur.",
     "noResultsFound": "Aucun résultat trouvé",
-    "noResultsFoundHint": "Nous n'avons trouvé aucun résultat correspondant à votre recherche. Veuillez essayer une requête différente."
+    "noResultsFoundHint": "Nous n'avons trouvé aucun résultat correspondant à votre recherche. Veuillez essayer une requête différente.",
+    "searchError": "Une erreur est survenue",
+    "searchErrorHint": "Un problème est survenu lors de la recherche. Veuillez réessayer."
 }

@@ -31,7 +31,7 @@ All share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.12.0
+  smart_auto_suggest_box: ^0.13.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -493,6 +493,7 @@ SmartAutoSuggestBox<String>(
 | `items` | `ValueNotifier<Set<SmartAutoSuggestItem<T>>>` | All available items (unfiltered) |
 | `filteredItems` | `ValueNotifier<Set<SmartAutoSuggestItem<T>>>` | Filtered/sorted items shown in overlay |
 | `isLoading` | `ValueNotifier<bool>` | Whether an async search is in progress |
+| `errorMessage` | `ValueNotifier<String?>` | Error message from the last failed `onSearch` call |
 
 ### Methods
 

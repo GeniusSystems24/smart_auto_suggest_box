@@ -34,5 +34,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "searchingInServerHint": MessageLookupByLibrary.simpleMessage(
       "कृपया प्रतीक्षा करें जब हम सर्वर से परिणाम प्राप्त करते हैं।",
     ),
+    "searchError": MessageLookupByLibrary.simpleMessage(
+      "एक त्रुटि हुई",
+    ),
+    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
+      "खोज के दौरान कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+    ),
   };
 }
