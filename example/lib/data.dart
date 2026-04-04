@@ -6,25 +6,27 @@ import 'package:smart_auto_suggest_box/smart_auto_suggest_box.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 List<String> get fruits => [
-      'apple',
-      'apricot',
-      'avocado',
-      'banana',
-      'cherry',
-      'date',
-      'elderberry',
-      'fig',
-      'grape',
-      'honeydew',
-      'kiwi',
-      'lemon',
-      'mango',
-      'orange',
-    ];
+  'apple',
+  'apricot',
+  'avocado',
+  'banana',
+  'cherry',
+  'date',
+  'elderberry',
+  'fig',
+  'grape',
+  'honeydew',
+  'kiwi',
+  'lemon',
+  'mango',
+  'orange',
+];
 
 /// Shared item builder used across demos.
 SmartAutoSuggestItem<String> fruitItemBuilder(
-    BuildContext context, String value) {
+  BuildContext context,
+  String value,
+) {
   return SmartAutoSuggestItem(
     key: value,
     value: value,
@@ -79,8 +81,7 @@ Widget sectionHeader(
 }
 
 Widget shimmerRow(BuildContext context) {
-  final color =
-      Theme.of(context).colorScheme.onSurface.withValues(alpha: .08);
+  final color = Theme.of(context).colorScheme.onSurface.withValues(alpha: .08);
   return Row(
     children: [
       Container(

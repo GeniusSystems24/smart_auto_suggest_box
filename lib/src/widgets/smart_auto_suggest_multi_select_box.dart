@@ -185,7 +185,6 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   SmartAutoSuggestDataSource<T> get _dataSource => widget.dataSource;
 
   Size _boxSize = Size.zero;
-  bool _autoScrollScheduled = false;
 
   /// Convenience accessors that delegate to DataSource.
   Set<SmartAutoSuggestItem<T>> get _localItems =>

@@ -11,6 +11,7 @@ import 'generated/l10n.dart';
 import 'smart_auto_suggest_theme.dart';
 import 'src/common/common.dart';
 
+export 'generated/l10n.dart';
 export 'smart_auto_suggest_theme.dart';
 
 // common
