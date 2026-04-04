@@ -130,7 +130,7 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
   /// When `null` (default), the selected item's label is placed into the
   /// [TextField] as plain text (the classic behavior).
   final Widget Function(BuildContext context, SmartAutoSuggestItem<T> item)?
-      selectedItemBuilder;
+  selectedItemBuilder;
 
   /// offset: const Offset(0, 0.8),
   /// Creates a fluent-styled auto suggest box.
@@ -488,6 +488,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
       if (widget.dataSource != null) {
         _dataSource.initialize(context);
         _dataSource.filter(_searchText, sorter);
+        _scheduleSearchForNoLocalResults();
       }
     });
   }
@@ -549,8 +550,9 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     if (widget.smartController != oldWidget.smartController ||
         widget.controller != oldWidget.controller) {
       _controller.removeListener(_handleTextChanged);
-      oldWidget.smartController?.selectedItem
-          .removeListener(_onSelectedItemChanged);
+      oldWidget.smartController?.selectedItem.removeListener(
+        _onSelectedItemChanged,
+      );
       _ownedSmartController?.dispose();
 
       if (widget.smartController != null) {
@@ -597,6 +599,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
         _dataSource.initialize(context);
       }
       _dataSource.filter(_searchText, sorter);
+      _scheduleSearchForNoLocalResults();
     } else if (widget.items != oldWidget.items && _ownsDataSource) {
       // Deprecated path: items changed externally
       _dataSource.items.value = widget.items.value;
@@ -632,6 +635,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     }
 
     _updateLocalItems();
+    _scheduleSearchForNoLocalResults();
 
     // If searchMode is always, trigger search on every text change
     if (_dataSource.searchMode == SmartAutoSuggestSearchMode.always &&
@@ -643,6 +647,34 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       _updateLocalItems();
+    });
+  }
+
+  void _scheduleSearchForNoLocalResults() {
+    if (_dataSource.searchMode != SmartAutoSuggestSearchMode.onNoLocalResults) {
+      return;
+    }
+
+    final searchCallback = _buildSearchCallback();
+    final searchText = _searchText.trim();
+    if (searchCallback == null ||
+        searchText.isEmpty ||
+        _localItems.isNotEmpty ||
+        isLoading.value) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final currentSearchText = _searchText.trim();
+      if (currentSearchText != searchText ||
+          _localItems.isNotEmpty ||
+          isLoading.value) {
+        return;
+      }
+
+      unawaited(searchCallback(searchText));
     });
   }
 
@@ -1271,14 +1303,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
     super.initState();
     focusSubscription = widget.focusStream.listen((index) {
       if (!mounted) return;
-
-      final currentSelectedOffset = widget.tileHeight * index;
-
-      scrollController.animateTo(
-        currentSelectedOffset,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeInOut,
-      );
+      _scrollToFocusedItem(index);
       setState(() {});
     });
     // Listen to DataSource changes to rebuild overlay
@@ -1299,6 +1324,35 @@ class _SmartAutoSuggestBoxOverlayState<T>
     widget.dataSource.errorMessage.removeListener(_onDataChanged);
     scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToFocusedItem(int index) {
+    final currentSelectedOffset = widget.tileHeight * index;
+
+    void animate() {
+      if (!mounted || !scrollController.hasClients) return;
+
+      final position = scrollController.position;
+      final targetOffset = currentSelectedOffset.clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+
+      scrollController.animateTo(
+        targetOffset.toDouble(),
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeInOut,
+      );
+    }
+
+    if (scrollController.hasClients) {
+      animate();
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      animate();
+    });
   }
 
   EdgeInsetsGeometry _resolveMargin(
@@ -1448,13 +1502,14 @@ class _SmartAutoSuggestBoxOverlayState<T>
                   }
                   final errorMsg = widget.dataSource.errorMessage.value;
                   if (errorMsg != null) {
-                    final errorStyle = sat?.errorSubtitleStyle ??
+                    final errorStyle =
+                        sat?.errorSubtitleStyle ??
                         TextStyle(
                           fontSize: 14.0,
                           color: appTheme.colorScheme.outline,
                         );
-                    final errorIconColor = sat?.errorIconColor ??
-                        appTheme.colorScheme.error;
+                    final errorIconColor =
+                        sat?.errorIconColor ?? appTheme.colorScheme.error;
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1474,134 +1529,129 @@ class _SmartAutoSuggestBoxOverlayState<T>
                   final cursorOffset = search.selection.baseOffset;
                   final textToCursor =
                       (cursorOffset >= 0 && cursorOffset <= search.text.length)
-                          ? search.text.substring(0, cursorOffset)
-                          : search.text;
+                      ? search.text.substring(0, cursorOffset)
+                      : search.text;
                   final searchValue = textToCursor.trim();
                   {
                     final sortedItems = widget.dataSource.filteredItems.value;
+                    late Widget result;
+                    if (sortedItems.isEmpty) {
+                      var children = [
+                        if (widget.noResultsFoundBuilder != null) ...[
+                          Gap(8),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: widget.noResultsFoundBuilder?.call(context),
+                          ),
+                          Divider(
+                            endIndent: dividerIndent,
+                            indent: dividerIndent,
+                          ),
+                        ] else
+                          SizedBox(height: 4),
+                        ListTile(
+                          title: Text(tr.noResultsFound),
+                          subtitle: Text(tr.noResultsFoundHint),
+                          subtitleTextStyle: noResultsStyle,
+                        ),
+                      ];
+                      result = Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children:
+                            widget.direction ==
+                                    SmartAutoSuggestBoxDirection.top ||
+                                // ignore: deprecated_member_use_from_same_package
+                                widget.direction ==
+                                    SmartAutoSuggestBoxDirection.top
+                            ? children.reversed.toList()
+                            : children,
+                      );
+                    } else {
+                      result = Scrollbar(
+                        controller: scrollController,
+                        thumbVisibility: true,
+                        child: ListView.builder(
+                          itemExtent: widget.tileHeight,
+                          controller: scrollController,
+                          key: ValueKey<int>(sortedItems.length),
+                          shrinkWrap: true,
+                          padding: const EdgeInsetsDirectional.only(
+                            bottom: 4.0,
+                          ),
+                          itemCount: sortedItems.length,
+                          itemBuilder: (context, index) {
+                            final item = sortedItems.elementAt(index);
+                            if (widget.itemBuilder != null) {
+                              return widget.itemBuilder!(context, item);
+                            }
 
-                          if (searchValue.isNotEmpty && sortedItems.isEmpty) {
-                            widget.onNoResultsFound?.call(searchValue);
-                          }
-                          late Widget result;
-                          if (sortedItems.isEmpty) {
-                            var children = [
-                              if (widget.noResultsFoundBuilder != null) ...[
-                                Gap(8),
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8),
-                                  child: widget.noResultsFoundBuilder?.call(
-                                    context,
-                                  ),
-                                ),
-                                Divider(
-                                  endIndent: dividerIndent,
-                                  indent: dividerIndent,
-                                ),
-                              ] else
-                                SizedBox(height: 4),
-                              ListTile(
-                                title: Text(tr.noResultsFound),
-                                subtitle: Text(tr.noResultsFoundHint),
-                                subtitleTextStyle: noResultsStyle,
-                              ),
-                            ];
-                            result = Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              mainAxisSize: MainAxisSize.min,
-                              children:
-                                  widget.direction ==
-                                          SmartAutoSuggestBoxDirection.top ||
-                                      // ignore: deprecated_member_use_from_same_package
-                                      widget.direction ==
-                                          SmartAutoSuggestBoxDirection.top
-                                  ? children.reversed.toList()
-                                  : children,
-                            );
-                          } else {
-                            result = Scrollbar(
-                              controller: scrollController,
-                              thumbVisibility: true,
-                              child: ListView.builder(
-                                itemExtent: widget.tileHeight,
-                                controller: scrollController,
-                                key: ValueKey<int>(sortedItems.length),
-                                shrinkWrap: true,
-                                padding: const EdgeInsetsDirectional.only(
-                                  bottom: 4.0,
-                                ),
-                                itemCount: sortedItems.length,
-                                itemBuilder: (context, index) {
-                                  final item = sortedItems.elementAt(index);
-                                  if (widget.itemBuilder != null) {
-                                    return widget.itemBuilder!(context, item);
-                                  }
+                            // Multi-select state
+                            final isMultiSelect =
+                                widget.multiSelectController != null;
+                            final isItemSelected =
+                                isMultiSelect &&
+                                widget.multiSelectController!.isSelected(item);
+                            final atMax =
+                                isMultiSelect &&
+                                widget.maxSelections != null &&
+                                widget
+                                        .multiSelectController!
+                                        .selectedItems
+                                        .value
+                                        .length >=
+                                    widget.maxSelections!;
+                            final isDisabled =
+                                !item.enabled || (atMax && !isItemSelected);
 
-                                  // Multi-select state
-                                  final isMultiSelect =
-                                      widget.multiSelectController != null;
-                                  final isItemSelected = isMultiSelect &&
-                                      widget.multiSelectController!
-                                          .isSelected(item);
-                                  final atMax = isMultiSelect &&
-                                      widget.maxSelections != null &&
-                                      widget.multiSelectController!
-                                              .selectedItems.value.length >=
-                                          widget.maxSelections!;
-                                  final isDisabled = !item.enabled ||
-                                      (atMax && !isItemSelected);
-
-                                  if (item.builder != null) {
-                                    return GestureDetector(
-                                      onTap: isDisabled
-                                          ? null
-                                          : () => widget.onSelected(item),
-                                      child: Focus(
-                                        child: item.builder!(
-                                          context,
-                                          searchValue,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return SmartAutoSuggestBoxOverlayTile(
-                                    subtitle: null,
-                                    title: DefaultTextStyle.merge(
-                                      child: item.child ??
-                                          SmartAutoSuggestHighlightText(
-                                            text: item.label,
-                                            query: searchValue,
-                                          ),
-                                      style: isDisabled
-                                          ? TextStyle(color: disabledColor)
-                                          : null,
+                            if (item.builder != null) {
+                              return GestureDetector(
+                                onTap: isDisabled
+                                    ? null
+                                    : () => widget.onSelected(item),
+                                child: Focus(
+                                  child: item.builder!(context, searchValue),
+                                ),
+                              );
+                            }
+                            return SmartAutoSuggestBoxOverlayTile(
+                              subtitle: null,
+                              title: DefaultTextStyle.merge(
+                                child:
+                                    item.child ??
+                                    SmartAutoSuggestHighlightText(
+                                      text: item.label,
+                                      query: searchValue,
                                     ),
-                                    semanticLabel:
-                                        item.semanticLabel ?? item.label,
-                                    selected: isItemSelected ||
-                                        item.selected ||
-                                        widget.node.hasFocus,
-                                    onSelected: isDisabled
-                                        ? null
-                                        : () => widget.onSelected(item),
-                                    trailing: isItemSelected
-                                        ? Icon(
-                                            Icons.check,
-                                            size: 18,
-                                            color: selectedTileTextColor,
-                                          )
-                                        : null,
-                                    tileColor: tileColor,
-                                    selectedTileColor: selectedTileColor,
-                                    selectedTileTextColor:
-                                        selectedTileTextColor,
-                                    tilePadding: tilePadding,
-                                    tileSubtitleStyle: tileSubtitleStyle,
-                                  );
-                                },
+                                style: isDisabled
+                                    ? TextStyle(color: disabledColor)
+                                    : null,
                               ),
+                              semanticLabel: item.semanticLabel ?? item.label,
+                              selected:
+                                  isItemSelected ||
+                                  item.selected ||
+                                  widget.node.hasFocus,
+                              onSelected: isDisabled
+                                  ? null
+                                  : () => widget.onSelected(item),
+                              trailing: isItemSelected
+                                  ? Icon(
+                                      Icons.check,
+                                      size: 18,
+                                      color: selectedTileTextColor,
+                                    )
+                                  : null,
+                              tileColor: tileColor,
+                              selectedTileColor: selectedTileColor,
+                              selectedTileTextColor: selectedTileTextColor,
+                              tilePadding: tilePadding,
+                              tileSubtitleStyle: tileSubtitleStyle,
                             );
-                          }
+                          },
+                        ),
+                      );
+                    }
                     return result;
                   }
                 },

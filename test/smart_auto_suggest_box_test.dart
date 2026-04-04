@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:smart_auto_suggest_box/generated/l10n.dart';
 import 'package:smart_auto_suggest_box/smart_auto_suggest_box.dart';
 import 'package:smart_auto_suggest_box/smart_auto_suggest_view.dart';
 
@@ -10,10 +9,7 @@ List<String> _items(int count) {
 
 SmartAutoSuggestItem<String> _itemBuilder(BuildContext context, String value) {
   final index = value.replaceFirst('value_', '');
-  return SmartAutoSuggestItem<String>(
-    value: value,
-    label: 'Item $index',
-  );
+  return SmartAutoSuggestItem<String>(value: value, label: 'Item $index');
 }
 
 Widget _testApp({
@@ -89,6 +85,78 @@ Future<Rect> _focusField(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets(
+    'SmartAutoSuggestBox does not trigger async search side-effects during build',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            SmartAutoSuggestBoxLocalizations.delegate,
+          ],
+          supportedLocales:
+              SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
+          home: Scaffold(
+            body: SmartAutoSuggestBox<String>(
+              dataSource: SmartAutoSuggestDataSource(
+                itemBuilder: _itemBuilder,
+                initialList: (_) => ['apple'],
+                onSearch: (_, currentItems, searchText) async => <String>[],
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final input = find.byType(TextField);
+      await tester.tap(input);
+      await tester.pump();
+      await tester.enterText(input, 'zzz');
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'SmartAutoSuggestView does not trigger async search side-effects during build',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            SmartAutoSuggestBoxLocalizations.delegate,
+          ],
+          supportedLocales:
+              SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
+          home: Scaffold(
+            body: SmartAutoSuggestView<String>(
+              dataSource: SmartAutoSuggestDataSource(
+                itemBuilder: _itemBuilder,
+                initialList: (_) => ['apple'],
+                onSearch: (_, currentItems, searchText) async => <String>[],
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final input = find.byType(TextField);
+      await tester.enterText(input, 'zzz');
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'keeps preferred bottom direction when enough keyboard-aware space exists',
     (tester) async {

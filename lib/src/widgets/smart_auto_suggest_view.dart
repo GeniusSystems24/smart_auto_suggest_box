@@ -335,6 +335,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
       if (widget.dataSource != null) {
         _dataSource.initialize(context);
         _dataSource.filter(_searchText, sorter);
+        _scheduleSearchForNoLocalResults();
       }
     });
   }
@@ -413,6 +414,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
         _dataSource.initialize(context);
       }
       _dataSource.filter(_searchText, sorter);
+      _scheduleSearchForNoLocalResults();
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -422,6 +424,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
   void _handleTextChanged() {
     if (!mounted) return;
     _updateLocalItems();
+    _scheduleSearchForNoLocalResults();
 
     // searchMode.always: debounce-trigger search on every keystroke
     if (_dataSource.searchMode == SmartAutoSuggestSearchMode.always &&
@@ -432,6 +435,34 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _updateLocalItems();
+    });
+  }
+
+  void _scheduleSearchForNoLocalResults() {
+    if (_dataSource.searchMode != SmartAutoSuggestSearchMode.onNoLocalResults) {
+      return;
+    }
+
+    final searchCallback = _buildSearchCallback();
+    final searchText = _searchText.trim();
+    if (searchCallback == null ||
+        searchText.isEmpty ||
+        _localItems.isNotEmpty ||
+        isLoading.value) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final currentSearchText = _searchText.trim();
+      if (currentSearchText != searchText ||
+          _localItems.isNotEmpty ||
+          isLoading.value) {
+        return;
+      }
+
+      unawaited(searchCallback(searchText));
     });
   }
 
@@ -680,11 +711,7 @@ class _SmartAutoSuggestViewListState<T>
     super.initState();
     _focusSub = widget.focusStream.listen((index) {
       if (!mounted) return;
-      _scrollController.animateTo(
-        widget.tileHeight * index,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeInOut,
-      );
+      _scrollToFocusedItem(index);
       setState(() {});
     });
     widget.dataSource.filteredItems.addListener(_onDataChanged);
@@ -706,18 +733,49 @@ class _SmartAutoSuggestViewListState<T>
     super.dispose();
   }
 
+  void _scrollToFocusedItem(int index) {
+    final currentSelectedOffset = widget.tileHeight * index;
+
+    void animate() {
+      if (!mounted || !_scrollController.hasClients) return;
+
+      final position = _scrollController.position;
+      final targetOffset = currentSelectedOffset.clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+
+      _scrollController.animateTo(
+        targetOffset.toDouble(),
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeInOut,
+      );
+    }
+
+    if (_scrollController.hasClients) {
+      animate();
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      animate();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final appTheme = Theme.of(context);
-    final sat = widget.theme ??
-        appTheme.extension<SmartAutoSuggestTheme>();
+    final sat = widget.theme ?? appTheme.extension<SmartAutoSuggestTheme>();
 
     final surfaceColor = sat?.overlayColor ?? appTheme.colorScheme.surface;
-    final listBorder = sat?.listBorderSide ??
+    final listBorder =
+        sat?.listBorderSide ??
         BorderSide(color: appTheme.colorScheme.outlineVariant, width: 1);
-    final loadingStyle = sat?.loadingSubtitleStyle ??
+    final loadingStyle =
+        sat?.loadingSubtitleStyle ??
         TextStyle(fontSize: 14.0, color: appTheme.colorScheme.outline);
-    final noResultsStyle = sat?.noResultsSubtitleStyle ??
+    final noResultsStyle =
+        sat?.noResultsSubtitleStyle ??
         appTheme.textTheme.bodySmall?.copyWith(
           color: appTheme.colorScheme.outline,
         );
@@ -733,7 +791,8 @@ class _SmartAutoSuggestViewListState<T>
         sat?.selectedTileTextColor ?? appTheme.colorScheme.onPrimaryContainer;
     final tilePadding =
         sat?.tilePadding ?? const EdgeInsets.only(left: 4, right: 4, top: 4);
-    final tileSubtitleStyle = sat?.tileSubtitleStyle ??
+    final tileSubtitleStyle =
+        sat?.tileSubtitleStyle ??
         appTheme.textTheme.bodySmall?.copyWith(
           color: appTheme.colorScheme.outline,
         );
@@ -750,15 +809,14 @@ class _SmartAutoSuggestViewListState<T>
             color: surfaceColor,
             border: Border(top: listBorder),
           ),
-          child: widget.waitingBuilder?.call(context) ??
+          child:
+              widget.waitingBuilder?.call(context) ??
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
                     height: progressHeight,
-                    child: LinearProgressIndicator(
-                      color: progressColor,
-                    ),
+                    child: LinearProgressIndicator(color: progressColor),
                   ),
                   ListTile(
                     title: Text(tr.searchingInServer),
@@ -773,10 +831,10 @@ class _SmartAutoSuggestViewListState<T>
 
     final errorMsg = widget.dataSource.errorMessage.value;
     if (errorMsg != null) {
-      final errorStyle = sat?.errorSubtitleStyle ??
+      final errorStyle =
+          sat?.errorSubtitleStyle ??
           TextStyle(fontSize: 14.0, color: appTheme.colorScheme.outline);
-      final errorIconColor = sat?.errorIconColor ??
-          appTheme.colorScheme.error;
+      final errorIconColor = sat?.errorIconColor ?? appTheme.colorScheme.error;
       return FocusScope(
         node: widget.node,
         child: Container(
@@ -790,10 +848,7 @@ class _SmartAutoSuggestViewListState<T>
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(
-                  Icons.error_outline,
-                  color: errorIconColor,
-                ),
+                leading: Icon(Icons.error_outline, color: errorIconColor),
                 title: Text(tr.searchError),
                 subtitle: Text(errorMsg),
                 subtitleTextStyle: errorStyle,
@@ -808,14 +863,10 @@ class _SmartAutoSuggestViewListState<T>
     final cursorOffset = search.selection.baseOffset;
     final textToCursor =
         (cursorOffset >= 0 && cursorOffset <= search.text.length)
-            ? search.text.substring(0, cursorOffset)
-            : search.text;
+        ? search.text.substring(0, cursorOffset)
+        : search.text;
     final searchText = textToCursor.trim();
     final sortedItems = widget.dataSource.filteredItems.value;
-
-    if (searchText.isNotEmpty && sortedItems.isEmpty) {
-      widget.onNoResultsFound?.call(searchText);
-    }
 
     Widget content;
     if (sortedItems.isEmpty) {
@@ -829,10 +880,7 @@ class _SmartAutoSuggestViewListState<T>
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: widget.noResultsFoundBuilder?.call(context),
             ),
-            Divider(
-              endIndent: dividerIndent,
-              indent: dividerIndent,
-            ),
+            Divider(endIndent: dividerIndent, indent: dividerIndent),
           ] else
             const SizedBox(height: 4),
           ListTile(
@@ -860,31 +908,24 @@ class _SmartAutoSuggestViewListState<T>
             }
             if (item.builder != null) {
               return GestureDetector(
-                onTap: item.enabled
-                    ? () => widget.onSelected(item)
-                    : null,
-                child: Focus(
-                  child: item.builder!(context, searchText),
-                ),
+                onTap: item.enabled ? () => widget.onSelected(item) : null,
+                child: Focus(child: item.builder!(context, searchText)),
               );
             }
             return SmartAutoSuggestBoxOverlayTile(
               subtitle: null,
               title: DefaultTextStyle.merge(
-                child: item.child ??
+                child:
+                    item.child ??
                     SmartAutoSuggestHighlightText(
                       text: item.label,
                       query: searchText,
                     ),
-                style: item.enabled
-                    ? null
-                    : TextStyle(color: disabledColor),
+                style: item.enabled ? null : TextStyle(color: disabledColor),
               ),
               semanticLabel: item.semanticLabel ?? item.label,
               selected: item.selected || widget.node.hasFocus,
-              onSelected: item.enabled
-                  ? () => widget.onSelected(item)
-                  : null,
+              onSelected: item.enabled ? () => widget.onSelected(item) : null,
               tileColor: tileColor,
               selectedTileColor: selectedTileColor,
               selectedTileTextColor: selectedTileTextColor,

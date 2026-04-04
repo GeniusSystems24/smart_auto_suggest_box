@@ -70,7 +70,8 @@ class SmartAutoSuggestMultiSelectBox<T> extends StatefulWidget {
     BuildContext context,
     SmartAutoSuggestItem<T> item,
     VoidCallback onRemove,
-  )? chipBuilder;
+  )?
+  chipBuilder;
 
   /// Custom builder for overlay items.
   final SmartAutoSuggestItemBuilder<T>? itemBuilder;
@@ -229,6 +230,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
 
       _dataSource.initialize(context);
       _dataSource.filter(_searchText, sorter);
+      _scheduleSearchForNoLocalResults();
     });
   }
 
@@ -277,8 +279,9 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
 
     if (widget.smartController != oldWidget.smartController) {
       _controller.removeListener(_handleTextChanged);
-      oldWidget.smartController?.selectedItems
-          .removeListener(_onSelectionChanged);
+      oldWidget.smartController?.selectedItems.removeListener(
+        _onSelectionChanged,
+      );
       _ownedController?.dispose();
 
       if (widget.smartController != null) {
@@ -306,6 +309,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
         _dataSource.initialize(context);
       }
       _dataSource.filter(_searchText, sorter);
+      _scheduleSearchForNoLocalResults();
     }
 
     super.didUpdateWidget(oldWidget);
@@ -325,6 +329,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
     if (!mounted) return;
     if (_controller.text.length < 2) setState(() {});
     _updateLocalItems();
+    _scheduleSearchForNoLocalResults();
 
     if (_dataSource.searchMode == SmartAutoSuggestSearchMode.always &&
         _dataSource.onSearch != null) {
@@ -334,6 +339,34 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _updateLocalItems();
+    });
+  }
+
+  void _scheduleSearchForNoLocalResults() {
+    if (_dataSource.searchMode != SmartAutoSuggestSearchMode.onNoLocalResults) {
+      return;
+    }
+
+    final searchCallback = _buildSearchCallback();
+    final searchText = _searchText.trim();
+    if (searchCallback == null ||
+        searchText.isEmpty ||
+        _localItems.isNotEmpty ||
+        isLoading.value) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final currentSearchText = _searchText.trim();
+      if (currentSearchText != searchText ||
+          _localItems.isNotEmpty ||
+          isLoading.value) {
+        return;
+      }
+
+      unawaited(searchCallback(searchText));
     });
   }
 
@@ -752,8 +785,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
                 ),
 
                 // 2. Chips area
-                if (_selectedItems.isNotEmpty)
-                  _buildChipsArea(context),
+                if (_selectedItems.isNotEmpty) _buildChipsArea(context),
               ],
             );
           },
@@ -868,10 +900,9 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withValues(alpha: .4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: .4),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

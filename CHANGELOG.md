@@ -1,5 +1,20 @@
 # ChangeLog
 
+## 0.13.1
+
+### Bug Fixes
+
+* **Fixed async search side-effects during build** — triggering `onSearch`
+  when no local results were found is now scheduled after the current frame
+  instead of being invoked from inside widget `build()`. This fixes
+  `setState() or markNeedsBuild() called during build` in
+  `SmartAutoSuggestBox`, `SmartAutoSuggestView`, and
+  `SmartAutoSuggestMultiSelectBox`.
+
+* **Fixed auto-scroll on unattached `ScrollController`** — keyboard focus
+  scrolling now waits until the list is attached before calling `animateTo`,
+  preventing `ScrollController not attached to any scroll views`.
+
 ## 0.13.0
 
 ### New Features
