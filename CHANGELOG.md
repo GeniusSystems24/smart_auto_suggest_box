@@ -1,5 +1,35 @@
 # ChangeLog
 
+## 0.12.0
+
+### Bug Fixes
+
+* **Fixed double `onFocusChange` callback** — `item.selected` setter already
+  calls `onFocusChange`, but the code was also calling it explicitly, resulting
+  in duplicate callbacks. Removed the redundant calls across all three widgets.
+
+* **Fixed stale selection on items leaving `filteredItems`** —
+  `_unselectAll()` now iterates `dataSource.items` (all items) instead of only
+  `filteredItems`, so items that move out of the filtered set have their
+  `selected` flag properly cleared.
+
+### Improvements
+
+* **Auto-focus first item on data change** — when `filteredItems` updates
+  (e.g. async search completes), the first item is now automatically focused
+  on desktop, so the user can immediately navigate with arrow keys.
+
+* **`_autoSelectFirstItem` added to `SmartAutoSuggestView`** — the inline
+  list widget now auto-selects the first item on desktop platforms, matching
+  the behavior of `SmartAutoSuggestBox` and `SmartAutoSuggestMultiSelectBox`.
+
+* **`_selectItem()` extracted from `build()`** — the item selection logic is
+  now a proper state method instead of a closure recreated on every build, in
+  all three widgets.
+
+* **`isDesktopPlatform` helper** — new top-level getter in the common library
+  replaces repeated `switch (defaultTargetPlatform)` blocks across widgets.
+
 ## 0.11.0
 
 ### Breaking Changes

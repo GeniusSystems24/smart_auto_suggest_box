@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 
 part 'smart_auto_suggest_controller.dart';
@@ -70,6 +71,21 @@ enum SmartAutoSuggestBoxDirection {
 
 /// The default max height the auto suggest box popup can have
 const kSmartAutoSuggestBoxPopupMaxHeight = 380.0;
+
+/// Whether the current platform is a desktop platform (Windows, macOS, Linux).
+///
+/// Used to enable keyboard-driven features such as auto-focusing the first
+/// item in the overlay when it opens.
+bool get isDesktopPlatform {
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.windows:
+    case TargetPlatform.macOS:
+    case TargetPlatform.linux:
+      return true;
+    default:
+      return false;
+  }
+}
 
 // ─── Backward-compatibility aliases (deprecated) ────────────────────────────
 

@@ -31,7 +31,7 @@ All share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.11.0
+  smart_auto_suggest_box: ^0.12.0
 
 # localization (optional, but recommended)
   flutter_localizations:

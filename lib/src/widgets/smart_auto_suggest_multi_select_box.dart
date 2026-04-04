@@ -238,6 +238,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
       _entry?.markNeedsBuild();
     }
     setState(() {});
+    if (isOverlayVisible) _autoSelectFirstItem();
   }
 
   void _onSelectionChanged() {
@@ -593,29 +594,27 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   /// the overlay opens so the user can navigate with arrow keys
   /// and confirm with Enter right away.
   void _autoSelectFirstItem() {
-    if (!widget.enableKeyboardControls) return;
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.windows:
-      case TargetPlatform.macOS:
-      case TargetPlatform.linux:
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final items = _localItems.toList();
-          if (items.isEmpty) return;
-          _unselectAll();
-          items.first.selected = true;
-          items.first.onFocusChange?.call(true);
-          _focusStreamController.add(0);
-        });
-      default:
-        break;
-    }
+    if (!widget.enableKeyboardControls || !isDesktopPlatform) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final items = _localItems.toList();
+      if (items.isEmpty) return;
+      _unselectAll();
+      items.first.selected = true;
+      _focusStreamController.add(0);
+    });
+  }
+
+  /// Selects the item at [index] and scrolls the overlay to it.
+  void _selectItem(int index) {
+    _unselectAll();
+    (_localItems.elementAt(index)).selected = true;
+    _focusStreamController.add(index);
   }
 
   void _unselectAll() {
-    for (final item in _localItems) {
+    for (final item in _dataSource.items.value) {
       item.selected = false;
-      item.onFocusChange?.call(false);
     }
   }
 
@@ -660,13 +659,6 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
 
   @override
   Widget build(BuildContext context) {
-    void select(int index) {
-      _unselectAll();
-      final item = (_localItems.elementAt(index))..selected = true;
-      item.onFocusChange?.call(true);
-      _focusStreamController.add(index);
-    }
-
     return CompositedTransformTarget(
       link: _layerLink,
       child: Focus(
@@ -693,16 +685,16 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
             if (currentlySelectedIndex == -1 ||
                 currentlySelectedIndex == lastIndex) {
-              select(0);
-            } else if (currentlySelectedIndex >= 0) {
-              select(currentlySelectedIndex + 1);
+              _selectItem(0);
+            } else {
+              _selectItem(currentlySelectedIndex + 1);
             }
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
             if (currentlySelectedIndex == -1 || currentlySelectedIndex == 0) {
-              select(localItemsList.length - 1);
+              _selectItem(localItemsList.length - 1);
             } else {
-              select(currentlySelectedIndex - 1);
+              _selectItem(currentlySelectedIndex - 1);
             }
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.enter) {

@@ -292,6 +292,7 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
     if (!mounted) return;
     _dataSource.filter(_searchText, sorter);
     setState(() {});
+    _autoSelectFirstItem();
   }
 
   @override
@@ -338,7 +339,9 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
   }
 
   void _onDataSourceChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    _autoSelectFirstItem();
   }
 
   @override
@@ -428,10 +431,31 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
     });
   }
 
+  /// On desktop platforms, automatically focus the first item so the user
+  /// can navigate with arrow keys and confirm with Enter right away.
+  void _autoSelectFirstItem() {
+    if (!widget.enableKeyboardControls || !isDesktopPlatform) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final items = _localItems.toList();
+      if (items.isEmpty) return;
+      _unselectAll();
+      items.first.selected = true;
+      _focusStreamController.add(0);
+    });
+  }
+
+  /// Selects the item at [index] and scrolls the list to it.
+  void _selectItem(int index) {
+    _unselectAll();
+    (_localItems.elementAt(index)).selected = true;
+    _focusStreamController.add(index);
+    setState(() {});
+  }
+
   void _unselectAll() {
-    for (final item in _localItems) {
+    for (final item in _dataSource.items.value) {
       item.selected = false;
-      item.onFocusChange?.call(false);
     }
   }
 
@@ -464,14 +488,6 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
 
   @override
   Widget build(BuildContext context) {
-    void select(int index) {
-      _unselectAll();
-      final item = (_localItems.elementAt(index))..selected = true;
-      item.onFocusChange?.call(true);
-      _focusStreamController.add(index);
-      setState(() {});
-    }
-
     final showList = widget.showListWhenEmpty || _controller.text.isNotEmpty;
 
     return Focus(
@@ -488,12 +504,12 @@ class SmartAutoSuggestViewState<T> extends State<SmartAutoSuggestView<T>> {
         final lastIdx = localList.length - 1;
 
         if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          select(
+          _selectItem(
             currentIdx == -1 || currentIdx == lastIdx ? 0 : currentIdx + 1,
           );
           return KeyEventResult.handled;
         } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          select(
+          _selectItem(
             currentIdx == -1 || currentIdx == 0 ? lastIdx : currentIdx - 1,
           );
           return KeyEventResult.handled;
