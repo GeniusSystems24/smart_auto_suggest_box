@@ -44,6 +44,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_syntax_view: ^4.1.7
 
+  # Routing
+  go_router: ^14.6.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -54,6 +57,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # Code generation for go_router type-safe routes
+  go_router_builder: ^2.9.1
+  build_runner: ^2.4.15
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
