@@ -28,17 +28,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "noResultsFoundHint": MessageLookupByLibrary.simpleMessage(
       "Kami tidak dapat menemukan hasil yang cocok dengan pencarian Anda. Coba kueri lain.",
     ),
+    "searchError": MessageLookupByLibrary.simpleMessage("Terjadi kesalahan"),
+    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
+      "Terjadi masalah saat mencari. Silakan coba lagi.",
+    ),
     "searchingInServer": MessageLookupByLibrary.simpleMessage(
       "Mencari di server...",
     ),
     "searchingInServerHint": MessageLookupByLibrary.simpleMessage(
       "Silakan tunggu sementara kami mengambil hasil dari server.",
-    ),
-    "searchError": MessageLookupByLibrary.simpleMessage(
-      "Terjadi kesalahan",
-    ),
-    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
-      "Terjadi masalah saat mencari. Silakan coba lagi.",
     ),
   };
 }

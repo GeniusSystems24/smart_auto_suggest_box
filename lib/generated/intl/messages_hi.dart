@@ -28,17 +28,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "noResultsFoundHint": MessageLookupByLibrary.simpleMessage(
       "हमे आपके खोज से मेल खाने वाला कोई परिणाम नहीं मिला। कृपया कोई अलग क्वेरी आज़माएँ।",
     ),
+    "searchError": MessageLookupByLibrary.simpleMessage("एक त्रुटि हुई"),
+    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
+      "खोज के दौरान कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+    ),
     "searchingInServer": MessageLookupByLibrary.simpleMessage(
       "सर्वर में खोज जारी है...",
     ),
     "searchingInServerHint": MessageLookupByLibrary.simpleMessage(
       "कृपया प्रतीक्षा करें जब हम सर्वर से परिणाम प्राप्त करते हैं।",
-    ),
-    "searchError": MessageLookupByLibrary.simpleMessage(
-      "एक त्रुटि हुई",
-    ),
-    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
-      "खोज के दौरान कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
     ),
   };
 }

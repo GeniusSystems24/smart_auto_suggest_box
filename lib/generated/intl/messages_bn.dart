@@ -28,17 +28,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "noResultsFoundHint": MessageLookupByLibrary.simpleMessage(
       "আপনার অনুসন্ধানের সাথে মিলিয়ে কোনও ফলাফল পাওয়া যায়নি। দয়া করে অন্য প্রশ্ন ব্যবহার করুন।",
     ),
+    "searchError": MessageLookupByLibrary.simpleMessage("একটি ত্রুটি ঘটেছে"),
+    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
+      "অনুসন্ধানের সময় কিছু ভুল হয়েছে। দয়া করে আবার চেষ্টা করুন।",
+    ),
     "searchingInServer": MessageLookupByLibrary.simpleMessage(
       "সার্ভারে অনুসন্ধান করা হচ্ছে...",
     ),
     "searchingInServerHint": MessageLookupByLibrary.simpleMessage(
       "অনুগ্রহ করে অপেক্ষা করুন যতক্ষণ আমরা সার্ভার থেকে ফলাফল আনছি।",
-    ),
-    "searchError": MessageLookupByLibrary.simpleMessage(
-      "একটি ত্রুটি ঘটেছে",
-    ),
-    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
-      "অনুসন্ধানের সময় কিছু ভুল হয়েছে। দয়া করে আবার চেষ্টা করুন।",
     ),
   };
 }

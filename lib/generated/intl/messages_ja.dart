@@ -26,15 +26,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "noResultsFoundHint": MessageLookupByLibrary.simpleMessage(
       "検索に一致する結果が見つかりませんでした。別のクエリを試してください。",
     ),
+    "searchError": MessageLookupByLibrary.simpleMessage("エラーが発生しました"),
+    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
+      "検索中に問題が発生しました。もう一度お試しください。",
+    ),
     "searchingInServer": MessageLookupByLibrary.simpleMessage("サーバーを検索中..."),
     "searchingInServerHint": MessageLookupByLibrary.simpleMessage(
       "サーバーから結果を取得している間、しばらくお待ちください。",
-    ),
-    "searchError": MessageLookupByLibrary.simpleMessage(
-      "エラーが発生しました",
-    ),
-    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
-      "検索中に問題が発生しました。もう一度お試しください。",
     ),
   };
 }

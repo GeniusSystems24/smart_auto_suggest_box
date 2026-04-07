@@ -26,15 +26,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "noResultsFoundHint": MessageLookupByLibrary.simpleMessage(
       "我们无法找到与您的搜索匹配的结果。请尝试不同的查询。",
     ),
+    "searchError": MessageLookupByLibrary.simpleMessage("发生了错误"),
+    "searchErrorHint": MessageLookupByLibrary.simpleMessage("搜索时出了问题。请重试。"),
     "searchingInServer": MessageLookupByLibrary.simpleMessage("正在服务器中搜索..."),
     "searchingInServerHint": MessageLookupByLibrary.simpleMessage(
       "请稍候，我们正在从服务器获取结果。",
-    ),
-    "searchError": MessageLookupByLibrary.simpleMessage(
-      "发生了错误",
-    ),
-    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
-      "搜索时出了问题。请重试。",
     ),
   };
 }

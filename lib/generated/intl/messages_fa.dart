@@ -28,17 +28,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "noResultsFoundHint": MessageLookupByLibrary.simpleMessage(
       "نتیجه‌ای مطابق جستجوی شما پیدا نشد. لطفاً یک پرس‌وجوی دیگر را امتحان کنید.",
     ),
+    "searchError": MessageLookupByLibrary.simpleMessage("خطایی رخ داد"),
+    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
+      "هنگام جستجو مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
+    ),
     "searchingInServer": MessageLookupByLibrary.simpleMessage(
       "در حال جستجو در سرور...",
     ),
     "searchingInServerHint": MessageLookupByLibrary.simpleMessage(
       "لطفاً صبر کنید در حالی که نتایج را از سرور می‌گیریم.",
-    ),
-    "searchError": MessageLookupByLibrary.simpleMessage(
-      "خطایی رخ داد",
-    ),
-    "searchErrorHint": MessageLookupByLibrary.simpleMessage(
-      "هنگام جستجو مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
     ),
   };
 }
