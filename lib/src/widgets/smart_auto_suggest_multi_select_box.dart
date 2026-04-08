@@ -709,6 +709,15 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
             dismissOverlay();
             return KeyEventResult.handled;
           }
+
+          // Open overlay on arrow keys if it is not already visible.
+          if (!isOverlayVisible &&
+              (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+                  event.logicalKey == LogicalKeyboardKey.arrowUp)) {
+            showOverlay();
+            return KeyEventResult.handled;
+          }
+
           final localItemsList = _localItems.toList();
           if (localItemsList.isEmpty) return KeyEventResult.ignored;
 
