@@ -1,324 +1,361 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
-
 part of 'app_router.dart';
 
 // **************************************************************************
 // GoRouterGenerator
 // **************************************************************************
 
-List<RouteBase> get $appRoutes => [
-      $homeRoute,
-    ];
+List<RouteBase> get $appRoutes => [$homeRoute];
 
-RouteBase get $homeRoute => GoRoute(
-      path: '/',
-      name: 'HomeRoute',
-      builder: (BuildContext context, GoRouterState state) =>
-          const HomeRoute().build(context, state),
-      routes: [
-        GoRoute(
-          path: 'box-overlay',
-          name: 'BoxOverlayRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const BoxOverlayRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'view-inline',
-          name: 'ViewInlineRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const ViewInlineRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'async-search',
-          name: 'AsyncSearchRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const AsyncSearchRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'search-mode-always',
-          name: 'SearchModeAlwaysRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const SearchModeAlwaysRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'error-on-search',
-          name: 'ErrorOnSearchRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const ErrorOnSearchRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'dropdown-direction',
-          name: 'DropdownDirectionRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const DropdownDirectionRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'bottom-sheet',
-          name: 'BottomSheetRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const BottomSheetRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'custom-no-results',
-          name: 'CustomNoResultsRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const CustomNoResultsRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'custom-item-builder',
-          name: 'CustomItemBuilderRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const CustomItemBuilderRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'form-validation',
-          name: 'FormValidationRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const FormValidationRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'selected-item-display',
-          name: 'SelectedItemDisplayRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const SelectedItemDisplayRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'multi-select-basic',
-          name: 'MultiSelectBasicRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const MultiSelectBasicRoute().build(context, state),
-        ),
-        GoRoute(
-          path: 'multi-select-max',
-          name: 'MultiSelectMaxRoute',
-          builder: (BuildContext context, GoRouterState state) =>
-              const MultiSelectMaxRoute().build(context, state),
-        ),
-      ],
-    );
+RouteBase get $homeRoute => GoRouteData.$route(
+  path: '/',
+  factory: $HomeRoute._fromState,
+  routes: [
+    GoRouteData.$route(
+      path: 'box-overlay',
+      factory: $BoxOverlayRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'view-inline',
+      factory: $ViewInlineRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'async-search',
+      factory: $AsyncSearchRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'search-mode-always',
+      factory: $SearchModeAlwaysRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'error-on-search',
+      factory: $ErrorOnSearchRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'dropdown-direction',
+      factory: $DropdownDirectionRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'bottom-sheet',
+      factory: $BottomSheetRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'custom-no-results',
+      factory: $CustomNoResultsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'custom-item-builder',
+      factory: $CustomItemBuilderRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'form-validation',
+      factory: $FormValidationRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'selected-item-display',
+      factory: $SelectedItemDisplayRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'multi-select-basic',
+      factory: $MultiSelectBasicRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'multi-select-max',
+      factory: $MultiSelectMaxRoute._fromState,
+    ),
+  ],
+);
 
-extension $HomeRouteExtension on HomeRoute {
+mixin $HomeRoute on GoRouteData {
   static HomeRoute _fromState(GoRouterState state) => const HomeRoute();
 
+  @override
   String get location => GoRouteData.$location('/');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $BoxOverlayRouteExtension on BoxOverlayRoute {
+mixin $BoxOverlayRoute on GoRouteData {
   static BoxOverlayRoute _fromState(GoRouterState state) =>
       const BoxOverlayRoute();
 
+  @override
   String get location => GoRouteData.$location('/box-overlay');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $ViewInlineRouteExtension on ViewInlineRoute {
+mixin $ViewInlineRoute on GoRouteData {
   static ViewInlineRoute _fromState(GoRouterState state) =>
       const ViewInlineRoute();
 
+  @override
   String get location => GoRouteData.$location('/view-inline');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $AsyncSearchRouteExtension on AsyncSearchRoute {
+mixin $AsyncSearchRoute on GoRouteData {
   static AsyncSearchRoute _fromState(GoRouterState state) =>
       const AsyncSearchRoute();
 
+  @override
   String get location => GoRouteData.$location('/async-search');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $SearchModeAlwaysRouteExtension on SearchModeAlwaysRoute {
+mixin $SearchModeAlwaysRoute on GoRouteData {
   static SearchModeAlwaysRoute _fromState(GoRouterState state) =>
       const SearchModeAlwaysRoute();
 
+  @override
   String get location => GoRouteData.$location('/search-mode-always');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $ErrorOnSearchRouteExtension on ErrorOnSearchRoute {
+mixin $ErrorOnSearchRoute on GoRouteData {
   static ErrorOnSearchRoute _fromState(GoRouterState state) =>
       const ErrorOnSearchRoute();
 
+  @override
   String get location => GoRouteData.$location('/error-on-search');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $DropdownDirectionRouteExtension on DropdownDirectionRoute {
+mixin $DropdownDirectionRoute on GoRouteData {
   static DropdownDirectionRoute _fromState(GoRouterState state) =>
       const DropdownDirectionRoute();
 
+  @override
   String get location => GoRouteData.$location('/dropdown-direction');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $BottomSheetRouteExtension on BottomSheetRoute {
+mixin $BottomSheetRoute on GoRouteData {
   static BottomSheetRoute _fromState(GoRouterState state) =>
       const BottomSheetRoute();
 
+  @override
   String get location => GoRouteData.$location('/bottom-sheet');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $CustomNoResultsRouteExtension on CustomNoResultsRoute {
+mixin $CustomNoResultsRoute on GoRouteData {
   static CustomNoResultsRoute _fromState(GoRouterState state) =>
       const CustomNoResultsRoute();
 
+  @override
   String get location => GoRouteData.$location('/custom-no-results');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $CustomItemBuilderRouteExtension on CustomItemBuilderRoute {
+mixin $CustomItemBuilderRoute on GoRouteData {
   static CustomItemBuilderRoute _fromState(GoRouterState state) =>
       const CustomItemBuilderRoute();
 
+  @override
   String get location => GoRouteData.$location('/custom-item-builder');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $FormValidationRouteExtension on FormValidationRoute {
+mixin $FormValidationRoute on GoRouteData {
   static FormValidationRoute _fromState(GoRouterState state) =>
       const FormValidationRoute();
 
+  @override
   String get location => GoRouteData.$location('/form-validation');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $SelectedItemDisplayRouteExtension on SelectedItemDisplayRoute {
+mixin $SelectedItemDisplayRoute on GoRouteData {
   static SelectedItemDisplayRoute _fromState(GoRouterState state) =>
       const SelectedItemDisplayRoute();
 
+  @override
   String get location => GoRouteData.$location('/selected-item-display');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $MultiSelectBasicRouteExtension on MultiSelectBasicRoute {
+mixin $MultiSelectBasicRoute on GoRouteData {
   static MultiSelectBasicRoute _fromState(GoRouterState state) =>
       const MultiSelectBasicRoute();
 
+  @override
   String get location => GoRouteData.$location('/multi-select-basic');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }
 
-extension $MultiSelectMaxRouteExtension on MultiSelectMaxRoute {
+mixin $MultiSelectMaxRoute on GoRouteData {
   static MultiSelectMaxRoute _fromState(GoRouterState state) =>
       const MultiSelectMaxRoute();
 
+  @override
   String get location => GoRouteData.$location('/multi-select-max');
 
+  @override
   void go(BuildContext context) => context.go(location);
 
+  @override
   Future<T?> push<T>(BuildContext context) => context.push<T>(location);
 
+  @override
   void pushReplacement(BuildContext context) =>
       context.pushReplacement(location);
 
+  @override
   void replace(BuildContext context) => context.replace(location);
 }

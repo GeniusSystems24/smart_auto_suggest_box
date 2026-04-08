@@ -9,7 +9,10 @@ void main() {
   runApp(const MyApp());
 }
 
-final _router = GoRouter(routes: $appRoutes);
+final _router = GoRouter(
+  routes: $appRoutes,
+  navigatorKey: GlobalKey<NavigatorState>(),
+);
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -19,17 +22,20 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       routerConfig: _router,
       title: 'Smart Auto Suggest Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+      theme: ThemeData.light().copyWith(
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
         extensions: [SmartAutoSuggestTheme.light()],
       ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
+      darkTheme: ThemeData.dark().copyWith(
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade700),
+          ),
         ),
-        useMaterial3: true,
         extensions: [SmartAutoSuggestTheme.dark()],
       ),
       localizationsDelegates: const [

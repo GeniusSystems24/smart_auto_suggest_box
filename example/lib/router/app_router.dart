@@ -37,7 +37,7 @@ part 'app_router.g.dart';
   ],
 )
 @immutable
-class HomeRoute extends GoRouteData {
+class HomeRoute extends GoRouteData with $HomeRoute {
   const HomeRoute();
 
   @override
@@ -47,7 +47,7 @@ class HomeRoute extends GoRouteData {
 }
 
 @immutable
-class BoxOverlayRoute extends GoRouteData {
+class BoxOverlayRoute extends GoRouteData with $BoxOverlayRoute {
   const BoxOverlayRoute();
 
   @override
@@ -57,7 +57,7 @@ class BoxOverlayRoute extends GoRouteData {
 }
 
 @immutable
-class ViewInlineRoute extends GoRouteData {
+class ViewInlineRoute extends GoRouteData with $ViewInlineRoute {
   const ViewInlineRoute();
 
   @override
@@ -67,7 +67,7 @@ class ViewInlineRoute extends GoRouteData {
 }
 
 @immutable
-class AsyncSearchRoute extends GoRouteData {
+class AsyncSearchRoute extends GoRouteData with $AsyncSearchRoute {
   const AsyncSearchRoute();
 
   @override
@@ -77,7 +77,7 @@ class AsyncSearchRoute extends GoRouteData {
 }
 
 @immutable
-class SearchModeAlwaysRoute extends GoRouteData {
+class SearchModeAlwaysRoute extends GoRouteData with $SearchModeAlwaysRoute {
   const SearchModeAlwaysRoute();
 
   @override
@@ -87,7 +87,7 @@ class SearchModeAlwaysRoute extends GoRouteData {
 }
 
 @immutable
-class ErrorOnSearchRoute extends GoRouteData {
+class ErrorOnSearchRoute extends GoRouteData with $ErrorOnSearchRoute {
   const ErrorOnSearchRoute();
 
   @override
@@ -97,7 +97,7 @@ class ErrorOnSearchRoute extends GoRouteData {
 }
 
 @immutable
-class DropdownDirectionRoute extends GoRouteData {
+class DropdownDirectionRoute extends GoRouteData with $DropdownDirectionRoute {
   const DropdownDirectionRoute();
 
   @override
@@ -107,7 +107,7 @@ class DropdownDirectionRoute extends GoRouteData {
 }
 
 @immutable
-class BottomSheetRoute extends GoRouteData {
+class BottomSheetRoute extends GoRouteData with $BottomSheetRoute {
   const BottomSheetRoute();
 
   @override
@@ -117,7 +117,7 @@ class BottomSheetRoute extends GoRouteData {
 }
 
 @immutable
-class CustomNoResultsRoute extends GoRouteData {
+class CustomNoResultsRoute extends GoRouteData with $CustomNoResultsRoute {
   const CustomNoResultsRoute();
 
   @override
@@ -127,7 +127,7 @@ class CustomNoResultsRoute extends GoRouteData {
 }
 
 @immutable
-class CustomItemBuilderRoute extends GoRouteData {
+class CustomItemBuilderRoute extends GoRouteData with $CustomItemBuilderRoute {
   const CustomItemBuilderRoute();
 
   @override
@@ -137,7 +137,7 @@ class CustomItemBuilderRoute extends GoRouteData {
 }
 
 @immutable
-class FormValidationRoute extends GoRouteData {
+class FormValidationRoute extends GoRouteData with $FormValidationRoute {
   const FormValidationRoute();
 
   @override
@@ -147,7 +147,7 @@ class FormValidationRoute extends GoRouteData {
 }
 
 @immutable
-class SelectedItemDisplayRoute extends GoRouteData {
+class SelectedItemDisplayRoute extends GoRouteData with $SelectedItemDisplayRoute {
   const SelectedItemDisplayRoute();
 
   @override
@@ -157,7 +157,7 @@ class SelectedItemDisplayRoute extends GoRouteData {
 }
 
 @immutable
-class MultiSelectBasicRoute extends GoRouteData {
+class MultiSelectBasicRoute extends GoRouteData with $MultiSelectBasicRoute {
   const MultiSelectBasicRoute();
 
   @override
@@ -167,7 +167,7 @@ class MultiSelectBasicRoute extends GoRouteData {
 }
 
 @immutable
-class MultiSelectMaxRoute extends GoRouteData {
+class MultiSelectMaxRoute extends GoRouteData with $MultiSelectMaxRoute {
   const MultiSelectMaxRoute();
 
   @override
