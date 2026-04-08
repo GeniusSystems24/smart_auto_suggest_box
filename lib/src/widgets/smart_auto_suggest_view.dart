@@ -924,7 +924,7 @@ class _SmartAutoSuggestViewListState<T>
                 style: item.enabled ? null : TextStyle(color: disabledColor),
               ),
               semanticLabel: item.semanticLabel ?? item.label,
-              selected: item.selected || widget.node.hasFocus,
+              selected: item.selected,
               onSelected: item.enabled ? () => widget.onSelected(item) : null,
               tileColor: tileColor,
               selectedTileColor: selectedTileColor,

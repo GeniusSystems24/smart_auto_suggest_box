@@ -743,15 +743,14 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
         child: LayoutBuilder(
           builder: (context, constraints) {
             _width ??= constraints.maxWidth;
-            if (_width! != constraints.maxWidth) {
+            if ((_width! - constraints.maxWidth).abs() > 1.0) {
+              _width = constraints.maxWidth;
               WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
                 if (_entry != null && _entry!.mounted) {
-                  _entry!.remove();
-                  _entry = null;
-                  showOverlay();
+                  _entry!.markNeedsBuild();
                 }
               });
-              _width = constraints.maxWidth;
             }
             final decoration = (widget.decoration ?? const InputDecoration())
                 .copyWith(
