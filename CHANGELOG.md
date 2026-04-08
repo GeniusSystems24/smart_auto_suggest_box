@@ -1,5 +1,42 @@
 # ChangeLog
 
+## 0.13.5
+
+### Bug Fixes
+
+* **Fixed overlay flickering in deep navigation routes** — when a `LayoutBuilder`
+  is used in ancestor widgets (a common pattern in nested screens), any parent
+  rebuild could cause constraint micro-changes that were incorrectly interpreted
+  as a resize. The overlay was torn down and recreated on every such change,
+  producing a visible flicker. The comparison is now tolerance-based (> 1 px),
+  and a width change only triggers `markNeedsBuild()` on the existing overlay
+  entry instead of a full remove-and-recreate cycle. Applies to
+  `SmartAutoSuggestBox` and `SmartAutoSuggestMultiSelectBox`.
+
+* **Fixed keyboard focus highlight not visible on individual items** — the
+  `selected` condition in the overlay tile incorrectly included
+  `widget.node.hasFocus` (the overlay's `FocusScopeNode`). When the scope had
+  focus every tile appeared selected simultaneously, making per-item keyboard
+  highlight indistinguishable. The flag has been removed so only the truly
+  focused item (`item.selected`) shows the highlight color. Applies to
+  `SmartAutoSuggestBox` overlay and `SmartAutoSuggestView` inline list.
+
+### Improvements
+
+* **Arrow keys open the overlay when it is closed** — pressing ↑ or ↓ while
+  the text field has focus now opens the suggestion overlay if it is not already
+  visible, consistent with standard combobox UX. Applies to `SmartAutoSuggestBox`
+  and `SmartAutoSuggestMultiSelectBox`.
+
+### Example
+
+* **Migrated example app to `go_router_builder`** — all 13 use-case screens are
+  now registered as typed `GoRouteData` subclasses with `@TypedGoRoute`
+  annotations. Navigation uses generated `.push(context)` extension methods
+  instead of raw `Navigator.push`. Run
+  `dart run build_runner build --delete-conflicting-outputs` inside `example/`
+  to regenerate `app_router.g.dart` after adding new routes.
+
 ## 0.13.1
 
 ### Bug Fixes
