@@ -13,6 +13,7 @@ All share the same `SmartAutoSuggestDataSource` API and item model.
 ## Features
 
 - **Three display modes** — floating overlay (`SmartAutoSuggestBox`), inline list (`SmartAutoSuggestView`), or multi-select (`SmartAutoSuggestMultiSelectBox`)
+- **Unified state engine** — all three widgets share a single internal `SmartAutoSuggestEngine<T>` that owns filtering, async search scheduling, keyboard focus, and listener wiring — so every widget behaves consistently and rebuilds minimally
 - **Multi-select** — chip-based selection area, configurable max visible chips, "Show all" BottomSheet, max selections limit
 - **Unified data source** — `SmartAutoSuggestDataSource` with sync `initialList` and async `onSearch`
 - **Smart overlay positioning** — auto-repositions to the opposite side if insufficient space (`SmartAutoSuggestBox` only)
@@ -31,7 +32,7 @@ All share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.13.5
+  smart_auto_suggest_box: ^0.14.0
 
 # localization (optional, but recommended)
   flutter_localizations:

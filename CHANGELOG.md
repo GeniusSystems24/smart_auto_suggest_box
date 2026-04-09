@@ -1,5 +1,52 @@
 # ChangeLog
 
+## 0.14.0
+
+### Internal Refactor
+
+* **Unified state management via `SmartAutoSuggestEngine<T>`** — introduced a
+  single internal `ChangeNotifier` that owns filtering, async search
+  scheduling, keyboard-navigation focus, and listener wiring. The three
+  widgets (`SmartAutoSuggestBox`, `SmartAutoSuggestMultiSelectBox`, and
+  `SmartAutoSuggestView`) now delegate to the engine instead of each
+  re-implementing the same logic, eliminating duplicated text-change
+  handlers, focus streams, and dataSource listener plumbing. Net change:
+  ~308 fewer lines of duplicated code.
+
+* **`ValueNotifier`-based focus highlight** — keyboard-focused tile highlight
+  is now driven by `engine.focusedIndex` (a `ValueNotifier<int>`) rendered
+  via `ValueListenableBuilder`, so only the two affected tiles rebuild on
+  focus changes instead of the whole overlay.
+
+* **Sorter is passed explicitly to `filter()`** — `SmartAutoSuggestDataSource`
+  no longer exposes `activeSorter` as a mutable field. The sorter is now
+  passed per-call to `filter()`, with the most recent one cached internally
+  so `search()` can re-filter after merging new results. Widgets no longer
+  assign `activeSorter` from `initState`/`didUpdateWidget`.
+
+### Deprecations
+
+* **`SmartAutoSuggestItem.selected` setter** — highlight state is now managed
+  by `SmartAutoSuggestEngine.focusedIndex`. The setter is kept as a
+  backward-compatibility shim that still fires `onFocusChange`, but
+  rendering no longer relies on it. External code that reads
+  `item.selected` continues to observe the expected value.
+
+### Bug Fixes
+
+* **Fixed double rebuilds on every filter change** — overlay sub-widgets and
+  their outer `State` classes previously both added listeners to
+  `dataSource.filteredItems`, `isLoading`, and `errorMessage`, causing two
+  rebuilds per event. The overlay now subscribes only to
+  `engine.focusedIndex`, and the outer widget rebuilds the overlay via
+  `markNeedsBuild()` once per engine notification.
+
+### Notes
+
+* All public APIs and existing tests are preserved — this release is a
+  drop-in upgrade. Internal code using `dataSource.activeSorter` (not part
+  of the public API) will need to pass the sorter to `filter()` explicitly.
+
 ## 0.13.5
 
 ### Bug Fixes
