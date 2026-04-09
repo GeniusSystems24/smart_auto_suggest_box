@@ -103,8 +103,10 @@ class SmartAutoSuggestDataSource<T> {
   /// Debounce timer for search-mode-always.
   Timer? _debounceTimer;
 
-  /// The sorter currently in use (set by the widget).
-  SmartAutoSuggestSorter<T>? activeSorter;
+  /// Sorter cached from the most recent call to [filter], used so that a
+  /// later [search] call can re-filter against the same widget-level
+  /// sorter without needing to know about the widget that created it.
+  SmartAutoSuggestSorter<T>? _lastSorter;
 
   /// Creates a data source for [SmartAutoSuggestBox].
   SmartAutoSuggestDataSource({
@@ -126,9 +128,13 @@ class SmartAutoSuggestDataSource<T> {
   }
 
   /// Applies the [sorter] to [items] and updates [filteredItems].
+  ///
+  /// If [sorter] is not provided, the most recently used sorter is
+  /// re-applied. When no sorter has ever been supplied, [filteredItems]
+  /// becomes a copy of [items].
   void filter(String searchText, [SmartAutoSuggestSorter<T>? sorter]) {
-    if (sorter != null) activeSorter = sorter;
-    final s = activeSorter;
+    if (sorter != null) _lastSorter = sorter;
+    final s = _lastSorter;
     if (s == null) {
       filteredItems.value = items.value;
     } else {

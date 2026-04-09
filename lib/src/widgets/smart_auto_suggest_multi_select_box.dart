@@ -163,18 +163,10 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   late TextEditingController _controller;
   late SmartAutoSuggestMultiSelectController<T>? _ownedController;
   final FocusScopeNode _overlayNode = FocusScopeNode();
-  final _focusStreamController = StreamController<int>.broadcast();
+  late SmartAutoSuggestEngine<T> _engine;
 
   SmartAutoSuggestSorter<T> get sorter =>
       widget.sorter ?? widget.defaultItemSorter;
-
-  /// Returns the search text from the start of the input to the cursor.
-  String get _searchText {
-    final text = _controller.text;
-    final offset = _controller.selection.baseOffset;
-    if (offset < 0 || offset > text.length) return text;
-    return text.substring(0, offset);
-  }
 
   SmartAutoSuggestMultiSelectController<T> get _multiController =>
       widget.smartController ?? _ownedController!;
@@ -190,14 +182,6 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   /// Convenience accessors that delegate to DataSource.
   Set<SmartAutoSuggestItem<T>> get _localItems =>
       _dataSource.filteredItems.value;
-  ValueNotifier<bool> get isLoading => _dataSource.isLoading;
-
-  void _updateLocalItems() {
-    if (!mounted) return;
-    _dataSource.filter(_searchText, sorter);
-    setState(() {});
-    if (isOverlayVisible) _autoSelectFirstItem();
-  }
 
   @override
   void initState() {
@@ -212,13 +196,15 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
       _controller = _ownedController!.textController;
     }
 
-    _dataSource.activeSorter = sorter;
-    _dataSource.filteredItems.addListener(_onDataSourceChanged);
-    _dataSource.isLoading.addListener(_onDataSourceChanged);
-    _dataSource.errorMessage.addListener(_onDataSourceChanged);
+    _engine = SmartAutoSuggestEngine<T>(
+      textController: _controller,
+      dataSource: _dataSource,
+      sorter: sorter,
+      enableKeyboardFocus: widget.enableKeyboardControls,
+    )..attach();
+    _engine.addListener(_onEngineChanged);
 
     _multiController.selectedItems.addListener(_onSelectionChanged);
-    _controller.addListener(_handleTextChanged);
     _focusNode.addListener(_handleFocusChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -229,18 +215,23 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
       }
 
       _dataSource.initialize(context);
-      _dataSource.filter(_searchText, sorter);
-      _scheduleSearchForNoLocalResults();
+      _engine.refresh();
+      _engine.scheduleSearchOnNoResults(context);
     });
   }
 
-  void _onDataSourceChanged() {
+  void _onEngineChanged() {
     if (!mounted) return;
     if (_entry?.mounted ?? false) {
       _entry?.markNeedsBuild();
     }
     setState(() {});
-    if (isOverlayVisible) _autoSelectFirstItem();
+    if (isOverlayVisible) _engine.focusFirstIfVisible();
+
+    // Kick off the async search when the filter produced nothing.
+    _engine.scheduleSearchOnNoResults(context);
+    // For search-mode-always, trigger the debounced async search.
+    _engine.scheduleSearchAlways(context);
   }
 
   void _onSelectionChanged() {
@@ -250,14 +241,10 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _dataSource.filteredItems.removeListener(_onDataSourceChanged);
-    _dataSource.isLoading.removeListener(_onDataSourceChanged);
-    _dataSource.errorMessage.removeListener(_onDataSourceChanged);
+    _engine.removeListener(_onEngineChanged);
+    _engine.dispose();
     _multiController.selectedItems.removeListener(_onSelectionChanged);
     _focusNode.removeListener(_handleFocusChanged);
-    _controller.removeListener(_handleTextChanged);
-    _focusStreamController.close();
-    _unselectAll();
     _ownedController?.dispose();
     if (widget.focusNode == null) _focusNode.dispose();
     super.dispose();
@@ -278,7 +265,6 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
     }
 
     if (widget.smartController != oldWidget.smartController) {
-      _controller.removeListener(_handleTextChanged);
       oldWidget.smartController?.selectedItems.removeListener(
         _onSelectionChanged,
       );
@@ -292,24 +278,26 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
         _controller = _ownedController!.textController;
       }
 
-      _controller.addListener(_handleTextChanged);
+      _engine.updateConfig(textController: _controller);
       _multiController.selectedItems.addListener(_onSelectionChanged);
     }
 
     if (widget.dataSource != oldWidget.dataSource &&
         !_dataSource.hasSameConfig(widget.dataSource)) {
-      oldWidget.dataSource.filteredItems.removeListener(_onDataSourceChanged);
-      oldWidget.dataSource.isLoading.removeListener(_onDataSourceChanged);
-      oldWidget.dataSource.errorMessage.removeListener(_onDataSourceChanged);
-      _dataSource.activeSorter = sorter;
-      _dataSource.filteredItems.addListener(_onDataSourceChanged);
-      _dataSource.isLoading.addListener(_onDataSourceChanged);
-      _dataSource.errorMessage.addListener(_onDataSourceChanged);
+      _engine.updateConfig(dataSource: _dataSource);
       if (_dataSource.initialList != null) {
         _dataSource.initialize(context);
       }
-      _dataSource.filter(_searchText, sorter);
-      _scheduleSearchForNoLocalResults();
+      _engine.refresh();
+      _engine.scheduleSearchOnNoResults(context);
+    }
+
+    if (widget.sorter != oldWidget.sorter) {
+      _engine.updateConfig(sorter: sorter);
+    }
+
+    if (widget.enableKeyboardControls != oldWidget.enableKeyboardControls) {
+      _engine.updateConfig(enableKeyboardFocus: widget.enableKeyboardControls);
     }
 
     super.didUpdateWidget(oldWidget);
@@ -323,58 +311,6 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
       showOverlay();
     }
     setState(() {});
-  }
-
-  void _handleTextChanged() {
-    if (!mounted) return;
-    if (_controller.text.length < 2) setState(() {});
-    _updateLocalItems();
-    _scheduleSearchForNoLocalResults();
-
-    if (_dataSource.searchMode == SmartAutoSuggestSearchMode.always &&
-        _dataSource.onSearch != null) {
-      _dataSource.scheduleSearch(context, _searchText.trim());
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _updateLocalItems();
-    });
-  }
-
-  void _scheduleSearchForNoLocalResults() {
-    if (_dataSource.searchMode != SmartAutoSuggestSearchMode.onNoLocalResults) {
-      return;
-    }
-
-    final searchCallback = _buildSearchCallback();
-    final searchText = _searchText.trim();
-    if (searchCallback == null ||
-        searchText.isEmpty ||
-        _localItems.isNotEmpty ||
-        isLoading.value) {
-      return;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      final currentSearchText = _searchText.trim();
-      if (currentSearchText != searchText ||
-          _localItems.isNotEmpty ||
-          isLoading.value) {
-        return;
-      }
-
-      unawaited(searchCallback(searchText));
-    });
-  }
-
-  Future Function(String text)? _buildSearchCallback() {
-    if (_dataSource.onSearch != null) {
-      return (text) async => _dataSource.search(context, text);
-    }
-    return null;
   }
 
   bool get isOverlayVisible => _entry != null;
@@ -586,16 +522,12 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
                 waitingBuilder: widget.waitingBuilder,
                 tileHeight: widget.tileHeight,
                 direction: resolvedDirection,
-                dataSource: _dataSource,
+                engine: _engine,
                 maxHeight: maxHeight,
                 node: _overlayNode,
-                controller: _controller,
                 itemBuilder: widget.itemBuilder,
-                focusStream: _focusStreamController.stream,
-                sorter: sorter,
                 onSelected: _onItemTapped,
                 noResultsFoundBuilder: widget.noResultsFoundBuilder,
-                onNoResultsFound: _buildSearchCallback(),
                 multiSelectController: _multiController,
                 maxSelections: widget.maxSelections,
               ),
@@ -616,41 +548,18 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
   void dismissOverlay() {
     _entry?.remove();
     _entry = null;
-    _unselectAll();
+    _engine.clearFocus();
+    _engine.setOverlayVisible(false);
   }
 
   void showOverlay() {
     if (_entry == null && !(_entry?.mounted ?? false)) {
       _insertOverlay();
-      _autoSelectFirstItem();
-    }
-  }
-
-  /// On desktop platforms, automatically focus the first item when
-  /// the overlay opens so the user can navigate with arrow keys
-  /// and confirm with Enter right away.
-  void _autoSelectFirstItem() {
-    if (!widget.enableKeyboardControls || !isDesktopPlatform) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final items = _localItems.toList();
-      if (items.isEmpty) return;
-      _unselectAll();
-      items.first.selected = true;
-      _focusStreamController.add(0);
-    });
-  }
-
-  /// Selects the item at [index] and scrolls the overlay to it.
-  void _selectItem(int index) {
-    _unselectAll();
-    (_localItems.elementAt(index)).selected = true;
-    _focusStreamController.add(index);
-  }
-
-  void _unselectAll() {
-    for (final item in _dataSource.items.value) {
-      item.selected = false;
+      _engine.setOverlayVisible(true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !isOverlayVisible) return;
+        _engine.focusFirstIfVisible();
+      });
     }
   }
 
@@ -682,12 +591,9 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
     setState(() {});
   }
 
-  void _onSubmitted(List<SmartAutoSuggestItem<T>> localItemsList) {
-    final currentlySelectedIndex = localItemsList.indexWhere(
-      (item) => item.selected,
-    );
-    if (currentlySelectedIndex.isNegative) return;
-    final item = localItemsList[currentlySelectedIndex];
+  void _onSubmitted() {
+    final item = _engine.confirmFocused();
+    if (item == null) return;
     _onItemTapped(item);
   }
 
@@ -718,32 +624,16 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
             return KeyEventResult.handled;
           }
 
-          final localItemsList = _localItems.toList();
-          if (localItemsList.isEmpty) return KeyEventResult.ignored;
-
-          final currentlySelectedIndex = localItemsList.indexWhere(
-            (item) => item.selected,
-          );
-
-          final lastIndex = localItemsList.length - 1;
+          if (_localItems.isEmpty) return KeyEventResult.ignored;
 
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            if (currentlySelectedIndex == -1 ||
-                currentlySelectedIndex == lastIndex) {
-              _selectItem(0);
-            } else {
-              _selectItem(currentlySelectedIndex + 1);
-            }
+            _engine.focusNext();
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            if (currentlySelectedIndex == -1 || currentlySelectedIndex == 0) {
-              _selectItem(localItemsList.length - 1);
-            } else {
-              _selectItem(currentlySelectedIndex - 1);
-            }
+            _engine.focusPrevious();
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-            _onSubmitted(localItemsList);
+            _onSubmitted();
             return KeyEventResult.handled;
           } else {
             return KeyEventResult.ignored;
@@ -781,7 +671,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
                   clipBehavior: Clip.antiAliasWithSaveLayer,
                   onChanged: _onChanged,
                   onSubmitted: (text) {
-                    _onSubmitted(_localItems.toList());
+                    _onSubmitted();
                   },
                   style: widget.style,
                   decoration: decoration,

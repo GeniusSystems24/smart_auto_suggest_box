@@ -50,7 +50,19 @@ class SmartAutoSuggestItem<T> {
   final bool enabled;
 
   bool _selected = false;
+
+  /// Whether this item is currently keyboard-focused.
+  ///
+  /// Deprecated: highlight state is now owned by `SmartAutoSuggestEngine`
+  /// via its `focusedIndex` notifier. The setter is kept as a
+  /// backward-compatibility shim that still fires [onFocusChange], but
+  /// rendering should not rely on it.
   bool get selected => _selected;
+
+  @Deprecated(
+    'Highlight state is now managed by SmartAutoSuggestEngine.focusedIndex. '
+    'Setting this directly no longer drives rendering.',
+  )
   set selected(bool value) {
     if (_selected != value) {
       _selected = value;

@@ -368,7 +368,10 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   late TextEditingController _controller;
   late SmartAutoSuggestController<T>? _ownedSmartController;
   final FocusScopeNode _overlayNode = FocusScopeNode();
-  final _focusStreamController = StreamController<int>.broadcast();
+
+  /// Centralized state-management engine that owns filtering, async
+  /// search scheduling, and keyboard-navigation focus.
+  late SmartAutoSuggestEngine<T> _engine;
 
   /// Whether this state owns the DataSource (created internally for the
   /// deprecated `items` path) and must dispose it.
@@ -381,14 +384,6 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   SmartAutoSuggestSorter<T> get sorter =>
       widget.sorter ?? widget.defaultItemSorter;
 
-  /// Returns the search text from the start of the input to the cursor position.
-  String get _searchText {
-    final text = _controller.text;
-    final offset = _controller.selection.baseOffset;
-    if (offset < 0 || offset > text.length) return text;
-    return text.substring(0, offset);
-  }
-
   /// The effective [SmartAutoSuggestController] for this widget.
   SmartAutoSuggestController<T>? get _smartController =>
       widget.smartController ?? _ownedSmartController;
@@ -399,8 +394,6 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   /// changes.
   Size _boxSize = Size.zero;
 
-  /// Kept for backward compatibility with the deprecated `onNoResultsFound`.
-  Timer? _debounceTimer;
   bool _autoScrollScheduled = false;
 
   /// Convenience accessors that delegate to DataSource.
@@ -422,13 +415,6 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     _smartController?.clearSelection();
     widget.onChanged?.call('', FluentTextChangedReason.cleared);
     setState(() {});
-  }
-
-  void _updateLocalItems() {
-    if (!mounted) return;
-    _dataSource.filter(_searchText, sorter);
-    setState(() {});
-    if (isOverlayVisible) _autoSelectFirstItem();
   }
 
   @override
@@ -460,19 +446,18 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
       _dataSource.items.value = widget.items.value;
       _ownsDataSource = true;
     }
-    _dataSource.activeSorter = sorter;
 
-    // Listen to DataSource changes to rebuild overlay
-    _dataSource.filteredItems.addListener(_onDataSourceChanged);
-    _dataSource.isLoading.addListener(_onDataSourceChanged);
-    _dataSource.errorMessage.addListener(_onDataSourceChanged);
+    _engine = SmartAutoSuggestEngine<T>(
+      textController: _controller,
+      dataSource: _dataSource,
+      sorter: sorter,
+      enableKeyboardFocus: widget.enableKeyboardControls,
+      onSearchOverride: _buildLegacySearchOverride(),
+    )..attach();
+    _engine.addListener(_onEngineChanged);
 
     _smartController?.selectedItem.addListener(_onSelectedItemChanged);
-
-    _controller.addListener(_handleTextChanged);
     _focusNode.addListener(_handleFocusChanged);
-
-    _dataSource.filter(_searchText, sorter);
 
     // Update the overlay when the text box size has changed
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -487,46 +472,77 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
       // Populate items from dataSource.initialList
       if (widget.dataSource != null) {
         _dataSource.initialize(context);
-        _dataSource.filter(_searchText, sorter);
-        _scheduleSearchForNoLocalResults();
+        _engine.refresh();
+        _engine.scheduleSearchOnNoResults(context);
       }
     });
   }
 
-  void _onDataSourceChanged() {
+  void _onEngineChanged() {
     if (!mounted) return;
     if (_entry?.mounted ?? false) {
       _entry?.markNeedsBuild();
     }
     setState(() {});
-    if (isOverlayVisible) _autoSelectFirstItem();
+    if (isOverlayVisible) _engine.focusFirstIfVisible();
+
+    // Clear any stale selection if the user manually cleared the field.
+    if (_controller.text.isEmpty && _selectedItem != null) {
+      _selectedItem = null;
+    }
+
+    // Kick off the legacy / new search if the filter produced nothing.
+    _engine.scheduleSearchOnNoResults(context);
+    // For search-mode-always, trigger the debounced async search.
+    _engine.scheduleSearchAlways(context);
   }
 
   void _onSelectedItemChanged() {
     if (mounted) setState(() {});
   }
 
+  /// Builds the adapter used by the engine when the caller is on the
+  /// deprecated `onNoResultsFound` API path.
+  Future<void> Function(BuildContext context, String text)?
+  _buildLegacySearchOverride() {
+    if (widget.dataSource?.onSearch != null) return null;
+    // ignore: deprecated_member_use_from_same_package
+    final callback = widget.onNoResultsFound;
+    if (callback == null) return null;
+    return (context, text) async {
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      final currentText = _engine.searchText.trim();
+      if (currentText.isEmpty ||
+          _dataSource.lastSearchQuery.startsWith(currentText) ||
+          text != currentText) {
+        return;
+      }
+      _dataSource.lastSearchQuery = currentText;
+      _dataSource.isLoading.value = true;
+      final newItems = await callback(text).onError(
+        (error, stackTrace) => [],
+      );
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      if (newItems.isNotEmpty) {
+        _dataSource.addItems(newItems.toSet(), _engine.searchText);
+      }
+      _dataSource.isLoading.value = false;
+    };
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _debounceTimer?.cancel();
-    _dataSource.filteredItems.removeListener(_onDataSourceChanged);
-    _dataSource.isLoading.removeListener(_onDataSourceChanged);
-    _dataSource.errorMessage.removeListener(_onDataSourceChanged);
+    _engine.removeListener(_onEngineChanged);
+    _engine.dispose();
     if (_ownsDataSource) _dataSource.dispose();
     _smartController?.selectedItem.removeListener(_onSelectedItemChanged);
     _focusNode.removeListener(_handleFocusChanged);
-    _controller.removeListener(_handleTextChanged);
-    _focusStreamController.close();
-    _unselectAll();
 
     // Dispose internally-created controller/focus node
     _ownedSmartController?.dispose();
-    if (widget.smartController == null && widget.controller == null) {
-      // already disposed via _ownedSmartController
-    } else if (widget.smartController == null && widget.controller == null) {
-      _controller.dispose();
-    }
     if (widget.focusNode == null) _focusNode.dispose();
 
     super.dispose();
@@ -549,7 +565,6 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     // Handle smartController / controller changes
     if (widget.smartController != oldWidget.smartController ||
         widget.controller != oldWidget.controller) {
-      _controller.removeListener(_handleTextChanged);
       oldWidget.smartController?.selectedItem.removeListener(
         _onSelectedItemChanged,
       );
@@ -566,7 +581,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
         _controller = _ownedSmartController!.textController;
       }
 
-      _controller.addListener(_handleTextChanged);
+      _engine.updateConfig(textController: _controller);
       _smartController?.selectedItem.addListener(_onSelectedItemChanged);
     }
 
@@ -575,10 +590,8 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
         !(widget.dataSource != null &&
             oldWidget.dataSource != null &&
             _dataSource.hasSameConfig(widget.dataSource!))) {
-      _dataSource.filteredItems.removeListener(_onDataSourceChanged);
-      _dataSource.isLoading.removeListener(_onDataSourceChanged);
-      _dataSource.errorMessage.removeListener(_onDataSourceChanged);
-      if (_ownsDataSource) _dataSource.dispose();
+      final oldDataSource = _dataSource;
+      final oldOwned = _ownsDataSource;
 
       if (widget.dataSource != null) {
         _dataSource = widget.dataSource!;
@@ -590,20 +603,32 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
         _dataSource.items.value = widget.items.value;
         _ownsDataSource = true;
       }
-      _dataSource.activeSorter = sorter;
-      _dataSource.filteredItems.addListener(_onDataSourceChanged);
-      _dataSource.isLoading.addListener(_onDataSourceChanged);
-      _dataSource.errorMessage.addListener(_onDataSourceChanged);
+      _engine.updateConfig(
+        dataSource: _dataSource,
+        onSearchOverride: _buildLegacySearchOverride(),
+        clearOnSearchOverride: _buildLegacySearchOverride() == null,
+      );
+      if (oldOwned) oldDataSource.dispose();
 
       if (widget.dataSource?.initialList != null) {
         _dataSource.initialize(context);
       }
-      _dataSource.filter(_searchText, sorter);
-      _scheduleSearchForNoLocalResults();
+      _engine.refresh();
+      _engine.scheduleSearchOnNoResults(context);
     } else if (widget.items != oldWidget.items && _ownsDataSource) {
       // Deprecated path: items changed externally
       _dataSource.items.value = widget.items.value;
-      _updateLocalItems();
+      _engine.refresh();
+    }
+
+    // Handle sorter change
+    if (widget.sorter != oldWidget.sorter) {
+      _engine.updateConfig(sorter: sorter);
+    }
+
+    // Handle enableKeyboardControls change
+    if (widget.enableKeyboardControls != oldWidget.enableKeyboardControls) {
+      _engine.updateConfig(enableKeyboardFocus: widget.enableKeyboardControls);
     }
 
     // Clear stale selection if selectedItemBuilder was removed
@@ -623,94 +648,6 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
       showOverlay();
     }
     setState(() {});
-  }
-
-  void _handleTextChanged() {
-    if (!mounted) return;
-    if (_controller.text.length < 2) setState(() {});
-
-    // Clear selected item when text is manually cleared
-    if (_controller.text.isEmpty && _selectedItem != null) {
-      _selectedItem = null;
-    }
-
-    _updateLocalItems();
-    _scheduleSearchForNoLocalResults();
-
-    // If searchMode is always, trigger search on every text change
-    if (_dataSource.searchMode == SmartAutoSuggestSearchMode.always &&
-        _dataSource.onSearch != null) {
-      _dataSource.scheduleSearch(context, _searchText.trim());
-    }
-
-    // Update the overlay after layout
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      _updateLocalItems();
-    });
-  }
-
-  void _scheduleSearchForNoLocalResults() {
-    if (_dataSource.searchMode != SmartAutoSuggestSearchMode.onNoLocalResults) {
-      return;
-    }
-
-    final searchCallback = _buildSearchCallback();
-    final searchText = _searchText.trim();
-    if (searchCallback == null ||
-        searchText.isEmpty ||
-        _localItems.isNotEmpty ||
-        isLoading.value) {
-      return;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      final currentSearchText = _searchText.trim();
-      if (currentSearchText != searchText ||
-          _localItems.isNotEmpty ||
-          isLoading.value) {
-        return;
-      }
-
-      unawaited(searchCallback(searchText));
-    });
-  }
-
-  /// Builds a unified search callback that handles both the new [dataSource]
-  /// path and the deprecated [onNoResultsFound] path.
-  Future Function(String text)? _buildSearchCallback() {
-    // New data source path — delegate to DataSource
-    if (_dataSource.onSearch != null) {
-      return (text) async => _dataSource.search(context, text);
-    }
-
-    // Deprecated path - existing onNoResultsFound
-    // ignore: deprecated_member_use_from_same_package
-    if (widget.onNoResultsFound != null) {
-      return (text) async {
-        await Future.delayed(const Duration(milliseconds: 400));
-        final currentText = _searchText.trim();
-        if (currentText.isNotEmpty &&
-            !_dataSource.lastSearchQuery.startsWith(currentText) &&
-            text == currentText) {
-          _dataSource.lastSearchQuery = currentText;
-          isLoading.value = true;
-          // ignore: deprecated_member_use_from_same_package
-          final newItems = await widget.onNoResultsFound!(text).onError(
-            (error, stackTrace) => [],
-          );
-          await Future.delayed(const Duration(milliseconds: 300));
-          if (newItems.isNotEmpty) {
-            _dataSource.addItems(newItems.toSet(), _searchText);
-          }
-          isLoading.value = false;
-        }
-      };
-    }
-
-    return null;
   }
 
   /// Whether the overlay is currently visible.
@@ -993,26 +930,14 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                 waitingBuilder: widget.waitingBuilder,
                 tileHeight: widget.tileHeight,
                 direction: resolvedDirection,
-                dataSource: _dataSource,
+                engine: _engine,
                 maxHeight: maxHeight,
                 node: _overlayNode,
-                controller: _controller,
                 itemBuilder: widget.itemBuilder,
-                focusStream: _focusStreamController.stream,
-                sorter: sorter,
                 onSelected: (SmartAutoSuggestItem<T> item) {
-                  item.onSelected?.call();
-                  widget.onSelected?.call(item);
-                  _smartController?.select(item);
-                  widget.onChanged?.call(
-                    item.label,
-                    FluentTextChangedReason.suggestionChosen,
-                  );
-                  dismissOverlay();
-                  _focusNode.unfocus();
+                  _selectItemAndSubmit(item);
                 },
                 noResultsFoundBuilder: widget.noResultsFoundBuilder,
-                onNoResultsFound: _buildSearchCallback(),
               ),
             ),
           ),
@@ -1031,43 +956,20 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
   void dismissOverlay() {
     _entry?.remove();
     _entry = null;
-    _unselectAll();
+    _engine.clearFocus();
+    _engine.setOverlayVisible(false);
     widget.onOverlayVisibilityChanged?.call(isOverlayVisible);
   }
 
   void showOverlay() {
     if (_entry == null && !(_entry?.mounted ?? false)) {
       _insertOverlay();
+      _engine.setOverlayVisible(true);
       widget.onOverlayVisibilityChanged?.call(isOverlayVisible);
-      _autoSelectFirstItem();
-    }
-  }
-
-  /// On desktop platforms, automatically focus the first item when
-  /// the overlay opens so the user can navigate with arrow keys
-  /// and confirm with Enter right away.
-  void _autoSelectFirstItem() {
-    if (!widget.enableKeyboardControls || !isDesktopPlatform) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final items = _localItems.toList();
-      if (items.isEmpty) return;
-      _unselectAll();
-      items.first.selected = true;
-      _focusStreamController.add(0);
-    });
-  }
-
-  /// Selects the item at [index] and scrolls the overlay to it.
-  void _selectItem(int index) {
-    _unselectAll();
-    (_localItems.elementAt(index)).selected = true;
-    _focusStreamController.add(index);
-  }
-
-  void _unselectAll() {
-    for (final item in _dataSource.items.value) {
-      item.selected = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !isOverlayVisible) return;
+        _engine.focusFirstIfVisible();
+      });
     }
   }
 
@@ -1076,16 +978,23 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
     showOverlay();
   }
 
-  void _onSubmitted(List<SmartAutoSuggestItem<T>> localItemsList) {
-    final currentlySelectedIndex = localItemsList.indexWhere(
-      (item) => item.selected,
+  void _selectItemAndSubmit(SmartAutoSuggestItem<T> item) {
+    item.onSelected?.call();
+    widget.onSelected?.call(item);
+    _smartController?.select(item);
+    widget.onChanged?.call(
+      item.label,
+      FluentTextChangedReason.suggestionChosen,
     );
-    if (currentlySelectedIndex.isNegative) return;
+    dismissOverlay();
+    _focusNode.unfocus();
+  }
 
-    final item = localItemsList[currentlySelectedIndex];
+  void _onSubmitted() {
+    final item = _engine.confirmFocused();
+    if (item == null) return;
     widget.onSelected?.call(item);
     item.onSelected?.call();
-
     _smartController?.select(item);
     widget.onChanged?.call(
       _controller.text,
@@ -1123,32 +1032,17 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
             return KeyEventResult.handled;
           }
 
-          final localItemsList = _localItems.toList();
-          if (localItemsList.isEmpty) return KeyEventResult.ignored;
-
-          final currentlySelectedIndex = localItemsList.indexWhere(
-            (item) => item.selected,
-          );
-
-          final lastIndex = localItemsList.length - 1;
+          if (_localItems.isEmpty) return KeyEventResult.ignored;
 
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            if (currentlySelectedIndex == -1 ||
-                currentlySelectedIndex == lastIndex) {
-              _selectItem(0);
-            } else {
-              _selectItem(currentlySelectedIndex + 1);
-            }
+            _engine.focusNext();
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            if (currentlySelectedIndex == -1 || currentlySelectedIndex == 0) {
-              _selectItem(localItemsList.length - 1);
-            } else {
-              _selectItem(currentlySelectedIndex - 1);
-            }
+            _engine.focusPrevious();
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-            _onSubmitted(localItemsList);
+            final item = _engine.confirmFocused();
+            if (item != null) _selectItemAndSubmit(item);
             return KeyEventResult.handled;
           } else {
             return KeyEventResult.ignored;
@@ -1198,7 +1092,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                 clipBehavior: Clip.antiAliasWithSaveLayer,
                 onChanged: _onChanged,
                 onFieldSubmitted: (text) {
-                  _onSubmitted(_localItems.toList());
+                  _onSubmitted();
                   dismissOverlay();
                 },
                 style: widget.style,
@@ -1230,7 +1124,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
               clipBehavior: Clip.antiAliasWithSaveLayer,
               onChanged: _onChanged,
               onSubmitted: (text) {
-                _onSubmitted(_localItems.toList());
+                _onSubmitted();
                 dismissOverlay();
               },
               style: widget.style,
@@ -1261,17 +1155,13 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
 class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
   const _SmartAutoSuggestBoxOverlay({
     super.key,
-    required this.dataSource,
+    required this.engine,
     required this.itemBuilder,
-    required this.controller,
     required this.onSelected,
     required this.node,
-    required this.focusStream,
-    required this.sorter,
     required this.maxHeight,
     required this.noResultsFoundBuilder,
     this.theme,
-    this.onNoResultsFound,
     this.tileHeight = kComboBoxItemHeight,
     this.waitingBuilder,
     this.direction = SmartAutoSuggestBoxDirection.bottom,
@@ -1280,16 +1170,12 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
   });
 
   final SmartAutoSuggestTheme? theme;
-  final SmartAutoSuggestDataSource<T> dataSource;
+  final SmartAutoSuggestEngine<T> engine;
   final SmartAutoSuggestItemBuilder<T>? itemBuilder;
-  final TextEditingController controller;
   final ValueChanged<SmartAutoSuggestItem<T>> onSelected;
   final FocusScopeNode node;
-  final Stream<int> focusStream;
-  final SmartAutoSuggestSorter<T> sorter;
   final double maxHeight;
   final WidgetOrNullBuilder? noResultsFoundBuilder;
-  final Future Function(String text)? onNoResultsFound;
   final double tileHeight;
   final Widget Function(BuildContext context)? waitingBuilder;
   final SmartAutoSuggestBoxDirection direction;
@@ -1303,33 +1189,33 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
 
 class _SmartAutoSuggestBoxOverlayState<T>
     extends State<_SmartAutoSuggestBoxOverlay<T>> {
-  late final StreamSubscription focusSubscription;
   final ScrollController scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    focusSubscription = widget.focusStream.listen((index) {
-      if (!mounted) return;
-      _scrollToFocusedItem(index);
-      setState(() {});
-    });
-    // Listen to DataSource changes to rebuild overlay
-    widget.dataSource.filteredItems.addListener(_onDataChanged);
-    widget.dataSource.isLoading.addListener(_onDataChanged);
-    widget.dataSource.errorMessage.addListener(_onDataChanged);
+    // Scroll-to-focused-item driven by the engine's focusedIndex notifier.
+    widget.engine.focusedIndex.addListener(_onFocusedIndexChanged);
   }
 
-  void _onDataChanged() {
-    if (mounted) setState(() {});
+  void _onFocusedIndexChanged() {
+    if (!mounted) return;
+    final index = widget.engine.focusedIndex.value;
+    if (index >= 0) _scrollToFocusedItem(index);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SmartAutoSuggestBoxOverlay<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.engine, widget.engine)) {
+      oldWidget.engine.focusedIndex.removeListener(_onFocusedIndexChanged);
+      widget.engine.focusedIndex.addListener(_onFocusedIndexChanged);
+    }
   }
 
   @override
   void dispose() {
-    focusSubscription.cancel();
-    widget.dataSource.filteredItems.removeListener(_onDataChanged);
-    widget.dataSource.isLoading.removeListener(_onDataChanged);
-    widget.dataSource.errorMessage.removeListener(_onDataChanged);
+    widget.engine.focusedIndex.removeListener(_onFocusedIndexChanged);
     scrollController.dispose();
     super.dispose();
   }
@@ -1489,7 +1375,8 @@ class _SmartAutoSuggestBoxOverlayState<T>
               child: Builder(
                 builder: (context) {
                   final tr = SmartAutoSuggestBoxLocalizations.of(context);
-                  if (widget.dataSource.isLoading.value) {
+                  final dataSource = widget.engine.dataSource;
+                  if (dataSource.isLoading.value) {
                     return widget.waitingBuilder?.call(context) ??
                         Column(
                           mainAxisSize: MainAxisSize.min,
@@ -1508,7 +1395,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
                           ],
                         );
                   }
-                  final errorMsg = widget.dataSource.errorMessage.value;
+                  final errorMsg = dataSource.errorMessage.value;
                   if (errorMsg != null) {
                     final errorStyle =
                         sat?.errorSubtitleStyle ??
@@ -1533,15 +1420,12 @@ class _SmartAutoSuggestBoxOverlayState<T>
                       ],
                     );
                   }
-                  final search = widget.controller.value;
-                  final cursorOffset = search.selection.baseOffset;
-                  final textToCursor =
-                      (cursorOffset >= 0 && cursorOffset <= search.text.length)
-                      ? search.text.substring(0, cursorOffset)
-                      : search.text;
-                  final searchValue = textToCursor.trim();
+                  final searchValue = widget.engine.searchText.trim();
                   {
-                    final sortedItems = widget.dataSource.filteredItems.value;
+                    final sortedItems = dataSource.filteredItems.value;
+                    final sortedItemsList = sortedItems.toList(
+                      growable: false,
+                    );
                     late Widget result;
                     if (sortedItems.isEmpty) {
                       var children = [
@@ -1582,14 +1466,14 @@ class _SmartAutoSuggestBoxOverlayState<T>
                         child: ListView.builder(
                           itemExtent: widget.tileHeight,
                           controller: scrollController,
-                          key: ValueKey<int>(sortedItems.length),
+                          key: ValueKey<int>(sortedItemsList.length),
                           shrinkWrap: true,
                           padding: const EdgeInsetsDirectional.only(
                             bottom: 4.0,
                           ),
-                          itemCount: sortedItems.length,
+                          itemCount: sortedItemsList.length,
                           itemBuilder: (context, index) {
-                            final item = sortedItems.elementAt(index);
+                            final item = sortedItemsList[index];
                             if (widget.itemBuilder != null) {
                               return widget.itemBuilder!(context, item);
                             }
@@ -1622,38 +1506,45 @@ class _SmartAutoSuggestBoxOverlayState<T>
                                 ),
                               );
                             }
-                            return SmartAutoSuggestBoxOverlayTile(
-                              subtitle: null,
-                              title: DefaultTextStyle.merge(
-                                child:
-                                    item.child ??
-                                    SmartAutoSuggestHighlightText(
-                                      text: item.label,
-                                      query: searchValue,
-                                    ),
-                                style: isDisabled
-                                    ? TextStyle(color: disabledColor)
-                                    : null,
-                              ),
-                              semanticLabel: item.semanticLabel ?? item.label,
-                              selected:
-                                  isItemSelected ||
-                                  item.selected,
-                              onSelected: isDisabled
-                                  ? null
-                                  : () => widget.onSelected(item),
-                              trailing: isItemSelected
-                                  ? Icon(
-                                      Icons.check,
-                                      size: 18,
-                                      color: selectedTileTextColor,
-                                    )
-                                  : null,
-                              tileColor: tileColor,
-                              selectedTileColor: selectedTileColor,
-                              selectedTileTextColor: selectedTileTextColor,
-                              tilePadding: tilePadding,
-                              tileSubtitleStyle: tileSubtitleStyle,
+                            return ValueListenableBuilder<int>(
+                              valueListenable: widget.engine.focusedIndex,
+                              builder: (context, focusedIndex, _) {
+                                final isFocused = focusedIndex == index;
+                                return SmartAutoSuggestBoxOverlayTile(
+                                  subtitle: null,
+                                  title: DefaultTextStyle.merge(
+                                    child:
+                                        // ignore: deprecated_member_use_from_same_package
+                                        item.child ??
+                                        SmartAutoSuggestHighlightText(
+                                          text: item.label,
+                                          query: searchValue,
+                                        ),
+                                    style: isDisabled
+                                        ? TextStyle(color: disabledColor)
+                                        : null,
+                                  ),
+                                  semanticLabel:
+                                      item.semanticLabel ?? item.label,
+                                  selected: isItemSelected || isFocused,
+                                  onSelected: isDisabled
+                                      ? null
+                                      : () => widget.onSelected(item),
+                                  trailing: isItemSelected
+                                      ? Icon(
+                                          Icons.check,
+                                          size: 18,
+                                          color: selectedTileTextColor,
+                                        )
+                                      : null,
+                                  tileColor: tileColor,
+                                  selectedTileColor: selectedTileColor,
+                                  selectedTileTextColor:
+                                      selectedTileTextColor,
+                                  tilePadding: tilePadding,
+                                  tileSubtitleStyle: tileSubtitleStyle,
+                                );
+                              },
                             );
                           },
                         ),
