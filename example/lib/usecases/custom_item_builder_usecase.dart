@@ -16,24 +16,24 @@ class CustomItemBuilderUseCase extends StatelessWidget {
       padding: const EdgeInsets.all(24.0),
       child: SmartAutoSuggestBox<String>(
         dataSource: SmartAutoSuggestDataSource(
-          itemBuilder: (context, value) => SmartAutoSuggestItem(
-            value: value,
-            label: value[0].toUpperCase() + value.substring(1),
-            builder: (context, searchText) {
-              final label = value[0].toUpperCase() + value.substring(1);
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Text(fruitEmojis[value] ?? value[0]),
-                ),
-                title: SmartAutoSuggestHighlightText(
-                  text: label,
-                  query: searchText,
-                ),
-                subtitle: Text('Value: \$value'),
-                trailing: Chip(label: Text('\${label.length} letters')),
-              );
-            },
-          ),
+          itemBuilder: (context, value) {
+            final label = value[0].toUpperCase() + value.substring(1);
+            return SmartAutoSuggestItem(
+              value: value,
+              label: label,
+              leadingBuilder: (context, searchText, isFocused) =>
+                  CircleAvatar(child: Text(fruitEmojis[value] ?? value[0])),
+              titleBuilder: (context, searchText, isFocused) =>
+                  SmartAutoSuggestHighlightText(
+                    text: label,
+                    query: searchText,
+                  ),
+              subtitleBuilder: (context, searchText, isFocused) =>
+                  Text('Value: \$value'),
+              trailingBuilder: (context, searchText, isFocused) =>
+                  Chip(label: Text('\${label.length} letters')),
+            );
+          },
           initialList: (c) => fruits,
         ),
         tileHeight: 72,
@@ -61,24 +61,26 @@ class CustomItemBuilderUseCase extends StatelessWidget {
           children: [
             SmartAutoSuggestBox<String>(
               dataSource: SmartAutoSuggestDataSource(
-                itemBuilder: (context, value) => SmartAutoSuggestItem(
-                  value: value,
-                  label: value[0].toUpperCase() + value.substring(1),
-                  builder: (context, searchText) {
-                    final label = value[0].toUpperCase() + value.substring(1);
-                    return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(fruitEmojis[value] ?? value[0]),
-                      ),
-                      title: SmartAutoSuggestHighlightText(
-                        text: label,
-                        query: searchText,
-                      ),
-                      subtitle: Text('Value: $value'),
-                      trailing: Chip(label: Text('${label.length} letters')),
-                    );
-                  },
-                ),
+                itemBuilder: (context, value) {
+                  final label = value[0].toUpperCase() + value.substring(1);
+                  return SmartAutoSuggestItem(
+                    value: value,
+                    label: label,
+                    leadingBuilder: (context, searchText, isFocused) =>
+                        CircleAvatar(
+                          child: Text(fruitEmojis[value] ?? value[0]),
+                        ),
+                    titleBuilder: (context, searchText, isFocused) =>
+                        SmartAutoSuggestHighlightText(
+                          text: label,
+                          query: searchText,
+                        ),
+                    subtitleBuilder: (context, searchText, isFocused) =>
+                        Text('Value: $value'),
+                    trailingBuilder: (context, searchText, isFocused) =>
+                        Chip(label: Text('${label.length} letters')),
+                  );
+                },
                 initialList: (c) => fruits,
               ),
               tileHeight: 72,

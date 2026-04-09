@@ -19,22 +19,56 @@ class SmartAutoSuggestItem<T> {
 
   /// The widget to be shown.
   ///
-  /// Deprecated: Use [builder] instead, which wraps the widget in a
-  /// [Focus] widget for keyboard navigation support.
-  @Deprecated('Use builder instead')
+  /// Deprecated: Use [titleBuilder] instead.
+  @Deprecated('Use titleBuilder instead')
   final Widget? child;
 
-  /// Optional subtitle widget.
+  /// Optional static subtitle widget.
+  ///
+  /// If [subtitleBuilder] is also provided, [subtitleBuilder] takes priority.
   final Widget? subtitle;
 
-  /// Builder for a custom item widget.
+  /// Builder for the title part of this item's tile.
   ///
-  /// The returned widget is wrapped in a [Focus] widget so that keyboard
-  /// navigation (arrow keys) highlights the item correctly.
+  /// Receives [searchText] (the current query, may be null) and [isFocused]
+  /// (whether this item is keyboard-focused) so the returned widget can adapt
+  /// its appearance accordingly (e.g. highlight matching text).
   ///
-  /// The [searchText] parameter contains the current search query, which
-  /// can be used to highlight matching portions of the label.
-  final Widget Function(BuildContext context, String searchText)? builder;
+  /// When null the default [SmartAutoSuggestHighlightText] title is rendered.
+  final Widget? Function(
+    BuildContext context,
+    String? searchText,
+    bool isFocused,
+  )? titleBuilder;
+
+  /// Builder for the subtitle part of this item's tile.
+  ///
+  /// Receives [searchText] and [isFocused].
+  /// When null, [subtitle] is used as a fallback. If both are null no subtitle
+  /// is shown.
+  final Widget? Function(
+    BuildContext context,
+    String? searchText,
+    bool isFocused,
+  )? subtitleBuilder;
+
+  /// Builder for the trailing widget of this item's tile.
+  ///
+  /// Receives [searchText] and [isFocused].
+  final Widget? Function(
+    BuildContext context,
+    String? searchText,
+    bool isFocused,
+  )? trailingBuilder;
+
+  /// Builder for the leading widget of this item's tile.
+  ///
+  /// Receives [searchText] and [isFocused].
+  final Widget? Function(
+    BuildContext context,
+    String? searchText,
+    bool isFocused,
+  )? leadingBuilder;
 
   /// Called when this item's focus is changed.
   final ValueChanged<bool>? onFocusChange;
@@ -75,8 +109,11 @@ class SmartAutoSuggestItem<T> {
     this.key,
     required this.value,
     required this.label,
-    @Deprecated('Use builder instead') this.child,
-    this.builder,
+    @Deprecated('Use titleBuilder instead') this.child,
+    this.titleBuilder,
+    this.subtitleBuilder,
+    this.trailingBuilder,
+    this.leadingBuilder,
     this.onFocusChange,
     this.onSelected,
     this.semanticLabel,

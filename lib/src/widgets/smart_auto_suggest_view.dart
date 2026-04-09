@@ -785,34 +785,74 @@ class _SmartAutoSuggestViewListState<T>
           itemCount: sortedItemsList.length,
           itemBuilder: (context, index) {
             final item = sortedItemsList[index];
-            if (widget.itemBuilder != null) {
-              return widget.itemBuilder!(context, item);
-            }
-            if (item.builder != null) {
-              return GestureDetector(
-                onTap: item.enabled ? () => widget.onSelected(item) : null,
-                child: Focus(child: item.builder!(context, searchText)),
-              );
-            }
+
             return ValueListenableBuilder<int>(
               valueListenable: widget.engine.focusedIndex,
               builder: (context, focusedIndex, _) {
+                final isFocused = focusedIndex == index;
+
+                if (widget.itemBuilder != null) {
+                  return widget.itemBuilder!(
+                    context,
+                    item,
+                    searchText,
+                    isFocused,
+                  );
+                }
+
+                final hasBuilders =
+                    item.titleBuilder != null ||
+                    item.subtitleBuilder != null ||
+                    item.leadingBuilder != null ||
+                    item.trailingBuilder != null;
+
+                // ignore: deprecated_member_use_from_same_package
+                final defaultTitle = DefaultTextStyle.merge(
+                  child:
+                      // ignore: deprecated_member_use_from_same_package
+                      item.child ??
+                      SmartAutoSuggestHighlightText(
+                        text: item.label,
+                        query: searchText,
+                      ),
+                  style: item.enabled
+                      ? null
+                      : TextStyle(color: disabledColor),
+                );
+
                 return SmartAutoSuggestBoxOverlayTile(
-                  subtitle: null,
-                  title: DefaultTextStyle.merge(
-                    child:
-                        // ignore: deprecated_member_use_from_same_package
-                        item.child ??
-                        SmartAutoSuggestHighlightText(
-                          text: item.label,
-                          query: searchText,
-                        ),
-                    style: item.enabled
-                        ? null
-                        : TextStyle(color: disabledColor),
-                  ),
+                  leading: hasBuilders
+                      ? item.leadingBuilder?.call(
+                          context,
+                          searchText,
+                          isFocused,
+                        )
+                      : null,
+                  title: hasBuilders
+                      ? (item.titleBuilder?.call(
+                              context,
+                              searchText,
+                              isFocused,
+                            ) ??
+                            defaultTitle)
+                      : defaultTitle,
+                  subtitle: hasBuilders
+                      ? (item.subtitleBuilder?.call(
+                              context,
+                              searchText,
+                              isFocused,
+                            ) ??
+                            item.subtitle)
+                      : item.subtitle,
+                  trailing: hasBuilders
+                      ? item.trailingBuilder?.call(
+                          context,
+                          searchText,
+                          isFocused,
+                        )
+                      : null,
                   semanticLabel: item.semanticLabel ?? item.label,
-                  selected: focusedIndex == index,
+                  selected: isFocused,
                   onSelected: item.enabled
                       ? () => widget.onSelected(item)
                       : null,

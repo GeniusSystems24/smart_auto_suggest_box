@@ -183,8 +183,11 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
 
   /// A callback function that builds the items in the overlay.
   ///
-  /// Use [noResultsFoundBuilder] to build the overlay when no item is provided
-  final SmartAutoSuggestItemBuilder? itemBuilder;
+  /// Receives the [BuildContext], the [SmartAutoSuggestItem], the current
+  /// [searchText] query (may be null), and [isFocused] — whether the item is
+  /// currently keyboard-focused. Use [noResultsFoundBuilder] to build the
+  /// overlay when no item is provided.
+  final SmartAutoSuggestItemBuilder<T>? itemBuilder;
 
   final Widget Function(BuildContext context)? waitingBuilder;
   final double tileHeight;
@@ -1474,9 +1477,6 @@ class _SmartAutoSuggestBoxOverlayState<T>
                           itemCount: sortedItemsList.length,
                           itemBuilder: (context, index) {
                             final item = sortedItemsList[index];
-                            if (widget.itemBuilder != null) {
-                              return widget.itemBuilder!(context, item);
-                            }
 
                             // Multi-select state
                             final isMultiSelect =
@@ -1496,51 +1496,94 @@ class _SmartAutoSuggestBoxOverlayState<T>
                             final isDisabled =
                                 !item.enabled || (atMax && !isItemSelected);
 
-                            if (item.builder != null) {
-                              return GestureDetector(
-                                onTap: isDisabled
-                                    ? null
-                                    : () => widget.onSelected(item),
-                                child: Focus(
-                                  child: item.builder!(context, searchValue),
-                                ),
-                              );
-                            }
                             return ValueListenableBuilder<int>(
                               valueListenable: widget.engine.focusedIndex,
                               builder: (context, focusedIndex, _) {
                                 final isFocused = focusedIndex == index;
+
+                                if (widget.itemBuilder != null) {
+                                  return widget.itemBuilder!(
+                                    context,
+                                    item,
+                                    searchValue,
+                                    isFocused,
+                                  );
+                                }
+
+                                final hasBuilders =
+                                    item.titleBuilder != null ||
+                                    item.subtitleBuilder != null ||
+                                    item.leadingBuilder != null ||
+                                    item.trailingBuilder != null;
+
+                                // ignore: deprecated_member_use_from_same_package
+                                final defaultTitle = DefaultTextStyle.merge(
+                                  child:
+                                      // ignore: deprecated_member_use_from_same_package
+                                      item.child ??
+                                      SmartAutoSuggestHighlightText(
+                                        text: item.label,
+                                        query: searchValue,
+                                      ),
+                                  style: isDisabled
+                                      ? TextStyle(color: disabledColor)
+                                      : null,
+                                );
+
                                 return SmartAutoSuggestBoxOverlayTile(
-                                  subtitle: null,
-                                  title: DefaultTextStyle.merge(
-                                    child:
-                                        // ignore: deprecated_member_use_from_same_package
-                                        item.child ??
-                                        SmartAutoSuggestHighlightText(
-                                          text: item.label,
-                                          query: searchValue,
-                                        ),
-                                    style: isDisabled
-                                        ? TextStyle(color: disabledColor)
-                                        : null,
-                                  ),
+                                  leading: hasBuilders
+                                      ? item.leadingBuilder?.call(
+                                          context,
+                                          searchValue,
+                                          isFocused,
+                                        )
+                                      : null,
+                                  title: hasBuilders
+                                      ? (item.titleBuilder?.call(
+                                              context,
+                                              searchValue,
+                                              isFocused,
+                                            ) ??
+                                            defaultTitle)
+                                      : defaultTitle,
+                                  subtitle: hasBuilders
+                                      ? (item.subtitleBuilder?.call(
+                                              context,
+                                              searchValue,
+                                              isFocused,
+                                            ) ??
+                                            item.subtitle)
+                                      : item.subtitle,
+                                  trailing: hasBuilders
+                                      ? (item.trailingBuilder?.call(
+                                              context,
+                                              searchValue,
+                                              isFocused,
+                                            ) ??
+                                            (isItemSelected
+                                                ? Icon(
+                                                    Icons.check,
+                                                    size: 18,
+                                                    color:
+                                                        selectedTileTextColor,
+                                                  )
+                                                : null))
+                                      : (isItemSelected
+                                            ? Icon(
+                                                Icons.check,
+                                                size: 18,
+                                                color: selectedTileTextColor,
+                                              )
+                                            : null),
                                   semanticLabel:
                                       item.semanticLabel ?? item.label,
                                   selected: isItemSelected || isFocused,
                                   onSelected: isDisabled
                                       ? null
                                       : () => widget.onSelected(item),
-                                  trailing: isItemSelected
-                                      ? Icon(
-                                          Icons.check,
-                                          size: 18,
-                                          color: selectedTileTextColor,
-                                        )
-                                      : null,
                                   tileColor: tileColor,
                                   selectedTileColor: selectedTileColor,
-                                  selectedTileTextColor:
-                                      selectedTileTextColor,
+                                  selectedTileTextColor: selectedTileTextColor,
                                   tilePadding: tilePadding,
                                   tileSubtitleStyle: tileSubtitleStyle,
                                 );
@@ -1566,6 +1609,7 @@ class SmartAutoSuggestBoxOverlayTile extends StatefulWidget {
   const SmartAutoSuggestBoxOverlayTile({
     required this.title,
     required this.subtitle,
+    this.leading,
     this.selected = false,
     this.onSelected,
     this.semanticLabel,
@@ -1584,6 +1628,7 @@ class SmartAutoSuggestBoxOverlayTile extends StatefulWidget {
   final TextStyle? tileSubtitleStyle;
   final Widget title;
   final Widget? subtitle;
+  final Widget? leading;
   final VoidCallback? onSelected;
   final bool selected;
   final String? semanticLabel;
@@ -1629,6 +1674,7 @@ class _SmartAutoSuggestBoxOverlayTileState
         selectedColor:
             widget.selectedTileTextColor ??
             theme.colorScheme.onPrimaryContainer,
+        leading: widget.leading,
         title: FadeTransition(
           opacity: Tween<double>(
             begin: 0.75,

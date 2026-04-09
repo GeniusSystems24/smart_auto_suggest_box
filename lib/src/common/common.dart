@@ -27,7 +27,12 @@ typedef OnChangeSmartAutoSuggestBox<T> =
     void Function(String text, FluentTextChangedReason reason);
 
 typedef SmartAutoSuggestItemBuilder<T> =
-    Widget Function(BuildContext context, SmartAutoSuggestItem<T> item);
+    Widget Function(
+      BuildContext context,
+      SmartAutoSuggestItem<T> item,
+      String? searchText,
+      bool isFocused,
+    );
 
 enum FluentTextChangedReason {
   /// Whether the text in an [SmartAutoSuggestBox] was changed by user input

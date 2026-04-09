@@ -1,5 +1,48 @@
 # ChangeLog
 
+## 0.15.0
+
+### Breaking Changes
+
+* **`SmartAutoSuggestItem.builder` removed** — replaced by four focused
+  builders that each provide a specific part of the tile:
+
+  | New field | Renders |
+  |---|---|
+  | `titleBuilder` | Title (replaces deprecated `child`) |
+  | `subtitleBuilder` | Subtitle (falls back to static `subtitle`) |
+  | `trailingBuilder` | Trailing widget |
+  | `leadingBuilder` | Leading widget |
+
+  Each builder has the signature:
+  ```dart
+  Widget? Function(BuildContext context, String? searchText, bool isFocused)?
+  ```
+  `searchText` is the current query (can be used for highlighting) and
+  `isFocused` indicates keyboard focus so the widget can adapt its style.
+
+* **`SmartAutoSuggestItemBuilder<T>` typedef updated** — two extra positional
+  parameters added (`String? searchText`, `bool isFocused`):
+  ```dart
+  typedef SmartAutoSuggestItemBuilder<T> =
+      Widget Function(
+        BuildContext context,
+        SmartAutoSuggestItem<T> item,
+        String? searchText,
+        bool isFocused,
+      );
+  ```
+  Callers of `itemBuilder` on `SmartAutoSuggestBox`, `SmartAutoSuggestView`,
+  and `SmartAutoSuggestMultiSelectBox` must be updated to accept the two new
+  parameters.
+
+* **`SmartAutoSuggestBoxOverlayTile`** — new optional `leading` field added so
+  that `leadingBuilder` output is rendered inside the tile.
+
+### Deprecations
+
+* **`SmartAutoSuggestItem.child`** — deprecated in favour of `titleBuilder`.
+
 ## 0.14.0
 
 ### Internal Refactor
