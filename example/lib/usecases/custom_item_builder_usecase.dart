@@ -73,7 +73,7 @@ class CustomItemBuilderUseCase extends StatelessWidget {
                     titleBuilder: (context, searchText, isFocused) =>
                         SmartAutoSuggestHighlightText(
                           text: label,
-                          query: searchText,
+                          query: searchText ?? "",
                         ),
                     subtitleBuilder: (context, searchText, isFocused) =>
                         Text('Value: $value'),
