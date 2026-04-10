@@ -32,7 +32,7 @@ All share the same `SmartAutoSuggestDataSource` API and item model.
 
 ```yaml
 dependencies:
-  smart_auto_suggest_box: ^0.14.0
+  smart_auto_suggest_box: ^0.15.0
 
 # localization (optional, but recommended)
   flutter_localizations:
@@ -231,6 +231,10 @@ SmartAutoSuggestBox<String>(
 
 ### Custom Item Builder
 
+Use `itemBuilder` on the widget to take full control over how each suggestion
+tile is rendered. The callback now receives `searchText` (the current query)
+and `isFocused` (keyboard focus state) so you can adapt the widget accordingly:
+
 ```dart
 SmartAutoSuggestBox<String>(
   dataSource: SmartAutoSuggestDataSource(
@@ -238,10 +242,14 @@ SmartAutoSuggestBox<String>(
     initialList: (c) => items,
   ),
   tileHeight: 72,
-  itemBuilder: (context, item) {
+  itemBuilder: (context, item, searchText, isFocused) {
     return ListTile(
+      tileColor: isFocused ? Colors.blue.shade50 : null,
       leading: CircleAvatar(child: Text(item.label[0])),
-      title: Text(item.label),
+      title: SmartAutoSuggestHighlightText(
+        text: item.label,
+        query: searchText,
+      ),
       subtitle: Text('Value: ${item.value}'),
       trailing: Chip(label: Text('${item.label.length}')),
     );
@@ -281,28 +289,37 @@ SmartAutoSuggestHighlightText(
 )
 ```
 
-## Item Builder with Focus
+## Per-Section Item Builders
 
-Use `SmartAutoSuggestItem.builder` instead of the deprecated `child` to build
-custom item widgets. The builder receives the current `searchText` for
-highlighting, and the widget is automatically wrapped in `Focus` for keyboard
-navigation:
+Instead of building a complete custom widget, you can supply individual builders
+for each part of the tile: `leadingBuilder`, `titleBuilder`, `subtitleBuilder`,
+and `trailingBuilder`. Every builder receives `searchText` (the current query)
+and `isFocused` (keyboard focus state):
 
 ```dart
-SmartAutoSuggestItem(
-  key: 'apple',
-  value: 'apple',
-  label: 'Apple',
-  builder: (context, searchText) {
-    return ListTile(
-      title: SmartAutoSuggestHighlightText(
-        text: 'Apple',
-        query: searchText,
-      ),
+SmartAutoSuggestDataSource<String>(
+  itemBuilder: (context, value) {
+    final label = value[0].toUpperCase() + value.substring(1);
+    return SmartAutoSuggestItem(
+      value: value,
+      label: label,
+      leadingBuilder: (context, searchText, isFocused) =>
+          CircleAvatar(child: Text(label[0])),
+      titleBuilder: (context, searchText, isFocused) =>
+          SmartAutoSuggestHighlightText(text: label, query: searchText),
+      subtitleBuilder: (context, searchText, isFocused) =>
+          Text('Value: $value'),
+      trailingBuilder: (context, searchText, isFocused) =>
+          isFocused ? const Icon(Icons.arrow_forward_ios, size: 14) : null,
     );
   },
+  initialList: (context) => fruits,
 )
 ```
+
+All four builders are optional — omit any that you don't need and the default
+rendering is used for that slot. The `subtitle` static field still works as a
+fallback when `subtitleBuilder` is not set.
 
 ## SmartAutoSuggestController
 
@@ -552,7 +569,36 @@ SmartAutoSuggestBox<String>(
 | `listMaxHeight` | `double` | `380` | Max height of the inline suggestion list |
 | `showListWhenEmpty` | `bool` | `true` | Show list when text field is empty |
 
-## Migration from 0.1.x
+## Migration
+
+### 0.14.x → 0.15.0 (breaking)
+
+**`SmartAutoSuggestItem.builder` removed** — split into four focused builders:
+
+| Old | New |
+|-----|-----|
+| `builder: (context, searchText) => Widget` | `titleBuilder: (context, searchText, isFocused) => Widget?` |
+| _(leading part)_ | `leadingBuilder: (context, searchText, isFocused) => Widget?` |
+| _(subtitle part)_ | `subtitleBuilder: (context, searchText, isFocused) => Widget?` |
+| _(trailing part)_ | `trailingBuilder: (context, searchText, isFocused) => Widget?` |
+| `child` | `titleBuilder` (deprecated alias kept) |
+
+**`SmartAutoSuggestItemBuilder<T>` typedef** — two new positional parameters:
+
+```dart
+// Before
+Widget Function(BuildContext context, SmartAutoSuggestItem<T> item)
+
+// After
+Widget Function(BuildContext context, SmartAutoSuggestItem<T> item,
+               String? searchText, bool isFocused)
+```
+
+Update every `itemBuilder` callback on `SmartAutoSuggestBox`,
+`SmartAutoSuggestView`, and `SmartAutoSuggestMultiSelectBox` to accept the
+two additional parameters.
+
+### 0.1.x → 0.14.x
 
 All old type names are kept as deprecated `typedef` aliases — no code changes required.
 Rename at your own pace:
