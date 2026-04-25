@@ -1,6 +1,6 @@
 # ChangeLog
 
-## 0.15.1
+## 0.15.2
 
 ### New
 
@@ -14,6 +14,8 @@
   defaults (`0.0` / `double.infinity`) fall through to the internal
   defaults, so callers can override only the dimensions they care
   about (e.g. `BoxConstraints(minWidth: 400)`).
+  
+## 0.15.1
 
 ### Fixes
 
@@ -52,14 +54,17 @@
   | `leadingBuilder` | Leading widget |
 
   Each builder has the signature:
+
   ```dart
   Widget? Function(BuildContext context, String? searchText, bool isFocused)?
   ```
+
   `searchText` is the current query (can be used for highlighting) and
   `isFocused` indicates keyboard focus so the widget can adapt its style.
 
 * **`SmartAutoSuggestItemBuilder<T>` typedef updated** — two extra positional
   parameters added (`String? searchText`, `bool isFocused`):
+
   ```dart
   typedef SmartAutoSuggestItemBuilder<T> =
       Widget Function(
@@ -69,6 +74,7 @@
         bool isFocused,
       );
   ```
+
   Callers of `itemBuilder` on `SmartAutoSuggestBox`, `SmartAutoSuggestView`,
   and `SmartAutoSuggestMultiSelectBox` must be updated to accept the two new
   parameters.
