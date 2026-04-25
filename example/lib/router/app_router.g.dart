@@ -64,6 +64,10 @@ RouteBase get $homeRoute => GoRouteData.$route(
       path: 'multi-select-max',
       factory: $MultiSelectMaxRoute._fromState,
     ),
+    GoRouteData.$route(
+      path: 'overlay-tuning',
+      factory: $OverlayTuningRoute._fromState,
+    ),
   ],
 );
 
@@ -345,6 +349,27 @@ mixin $MultiSelectMaxRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/multi-select-max');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $OverlayTuningRoute on GoRouteData {
+  static OverlayTuningRoute _fromState(GoRouterState state) =>
+      const OverlayTuningRoute();
+
+  @override
+  String get location => GoRouteData.$location('/overlay-tuning');
 
   @override
   void go(BuildContext context) => context.go(location);

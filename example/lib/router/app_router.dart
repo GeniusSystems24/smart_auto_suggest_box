@@ -12,6 +12,7 @@ import '../usecases/error_on_search_usecase.dart';
 import '../usecases/form_validation_usecase.dart';
 import '../usecases/multi_select_basic_usecase.dart';
 import '../usecases/multi_select_max_usecase.dart';
+import '../usecases/overlay_tuning_usecase.dart';
 import '../usecases/search_mode_always_usecase.dart';
 import '../usecases/selected_item_display_usecase.dart';
 import '../usecases/view_inline_usecase.dart';
@@ -34,6 +35,7 @@ part 'app_router.g.dart';
     TypedGoRoute<SelectedItemDisplayRoute>(path: 'selected-item-display'),
     TypedGoRoute<MultiSelectBasicRoute>(path: 'multi-select-basic'),
     TypedGoRoute<MultiSelectMaxRoute>(path: 'multi-select-max'),
+    TypedGoRoute<OverlayTuningRoute>(path: 'overlay-tuning'),
   ],
 )
 @immutable
@@ -173,5 +175,15 @@ class MultiSelectMaxRoute extends GoRouteData with $MultiSelectMaxRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return const MultiSelectMaxUseCase();
+  }
+}
+
+@immutable
+class OverlayTuningRoute extends GoRouteData with $OverlayTuningRoute {
+  const OverlayTuningRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const OverlayTuningUseCase();
   }
 }

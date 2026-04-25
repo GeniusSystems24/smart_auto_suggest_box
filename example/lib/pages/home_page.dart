@@ -89,6 +89,12 @@ class DemoHomePage extends StatelessWidget {
             'Multi-Select with max limits',
             () => const MultiSelectMaxRoute().push(context),
           ),
+          _buildListItem(
+            context,
+            'Overlay Tuning',
+            'Play with asyncOnCount, forcedDirection and overlayCardConstraints',
+            () => const OverlayTuningRoute().push(context),
+          ),
         ],
       ),
     );
