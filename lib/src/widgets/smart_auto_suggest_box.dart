@@ -55,6 +55,8 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.waitingBuilder,
     this.tileHeight = kComboBoxItemHeight,
     this.direction = SmartAutoSuggestBoxDirection.bottom,
+    this.forcedDirection,
+    this.overlayCardConstraints,
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.offset,
@@ -106,6 +108,8 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
     this.waitingBuilder,
     this.tileHeight = kComboBoxItemHeight,
     this.direction = SmartAutoSuggestBoxDirection.bottom,
+    this.forcedDirection,
+    this.overlayCardConstraints,
     this.keyboardType = TextInputType.text,
     this.maxLength,
     this.offset,
@@ -143,8 +147,39 @@ class SmartAutoSuggestBox<T> extends StatefulWidget {
   /// Defaults to [TextInputType.text]
   final TextInputType keyboardType;
 
-  /// The direction in which the suggestions overlay will be shown
+  /// The preferred direction in which the suggestions overlay will be shown.
+  ///
+  /// The widget will fall back to a different direction automatically when
+  /// the preferred one cannot fit the estimated list size. To **disable**
+  /// the auto-fallback and pin the overlay to a fixed direction, use
+  /// [forcedDirection] instead.
   final SmartAutoSuggestBoxDirection direction;
+
+  /// Forces the overlay to be displayed in the given direction, bypassing
+  /// the automatic fallback that picks the direction with the most
+  /// available space.
+  ///
+  /// When `null` (default), the auto-resolution behavior driven by
+  /// [direction] is used. When non-null, the value here is used verbatim
+  /// regardless of how much space is available — useful when you want
+  /// deterministic placement (for example, in tests or when the layout
+  /// always guarantees enough room).
+  final SmartAutoSuggestBoxDirection? forcedDirection;
+
+  /// Optional [BoxConstraints] override for the overlay card.
+  ///
+  /// When `null` (default) the card uses internally-computed constraints
+  /// (no width bounds; max height derived from [maxPopupHeight] and the
+  /// available screen space).
+  ///
+  /// When provided, fields are **merged** with the defaults: any value
+  /// at the [BoxConstraints] constructor's own default — `0.0` for the
+  /// minimums or [double.infinity] for the maximums — is treated as
+  /// "unspecified" and falls through to the default. Other values
+  /// override. For example, `BoxConstraints(minWidth: 400)` keeps the
+  /// computed `maxHeight` while pinning the card to be at least 400px
+  /// wide.
+  final BoxConstraints? overlayCardConstraints;
 
   /// The data source for providing items and search functionality.
   ///
@@ -863,12 +898,17 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
         );
         final desiredPopupExtent = _estimateDesiredPopupExtent();
 
-        final resolvedDirection = _resolveDirection(
-          preferred: widget.direction,
-          extents: available.extents,
-          desiredPopupExtent: desiredPopupExtent,
-          boxSize: box.size,
-        );
+        // [forcedDirection] short-circuits the auto-fallback so the overlay
+        // is pinned to the requested direction even when there isn't
+        // enough space (caller's responsibility to size the layout).
+        final resolvedDirection = widget.forcedDirection != null
+            ? _normalizeDirection(widget.forcedDirection!)
+            : _resolveDirection(
+                preferred: widget.direction,
+                extents: available.extents,
+                desiredPopupExtent: desiredPopupExtent,
+                boxSize: box.size,
+              );
         _maybeAutoScrollForSpace(
           maxAvailableExtent: _maxExtent(available.extents),
           desiredPopupExtent: desiredPopupExtent,
@@ -932,8 +972,23 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
           }
         }
 
+        final mergedConstraints = mergeOverlayCardConstraints(
+          user: widget.overlayCardConstraints,
+          defaults: BoxConstraints(maxHeight: maxHeight),
+        );
+        // Honor the user's min/max width (if provided) by widening or
+        // capping the layout slot the card lives in. Without this the
+        // outer SizedBox would otherwise clamp the card to overlayWidth
+        // even when the user asked for more.
+        final layoutMaxWidth = mergedConstraints.maxWidth.isFinite
+            ? mergedConstraints.maxWidth
+            : double.infinity;
+        final layoutWidth = overlayWidth
+            .clamp(mergedConstraints.minWidth, layoutMaxWidth)
+            .toDouble();
+
         Widget child = PositionedDirectional(
-          width: overlayWidth,
+          width: layoutWidth,
           child: CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
@@ -941,14 +996,14 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
             followerAnchor: followerAnchor,
             offset: offset,
             child: SizedBox(
-              width: overlayWidth,
+              width: layoutWidth,
               child: _SmartAutoSuggestBoxOverlay<T>(
                 theme: widget.theme,
                 waitingBuilder: widget.waitingBuilder,
                 tileHeight: widget.tileHeight,
                 direction: resolvedDirection,
                 engine: _engine,
-                maxHeight: maxHeight,
+                cardConstraints: mergedConstraints,
                 node: _overlayNode,
                 itemBuilder: widget.itemBuilder,
                 onSelected: (SmartAutoSuggestItem<T> item) {
@@ -1176,7 +1231,7 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
     required this.itemBuilder,
     required this.onSelected,
     required this.node,
-    required this.maxHeight,
+    required this.cardConstraints,
     required this.noResultsFoundBuilder,
     this.theme,
     this.tileHeight = kComboBoxItemHeight,
@@ -1191,7 +1246,11 @@ class _SmartAutoSuggestBoxOverlay<T> extends StatefulWidget {
   final SmartAutoSuggestItemBuilder<T>? itemBuilder;
   final ValueChanged<SmartAutoSuggestItem<T>> onSelected;
   final FocusScopeNode node;
-  final double maxHeight;
+
+  /// Final, already-merged constraints applied to the overlay card
+  /// container.
+  final BoxConstraints cardConstraints;
+
   final WidgetOrNullBuilder? noResultsFoundBuilder;
   final double tileHeight;
   final Widget Function(BuildContext context)? waitingBuilder;
@@ -1372,7 +1431,7 @@ class _SmartAutoSuggestBoxOverlayState<T>
         node: widget.node,
         child: Container(
           margin: _resolveMargin(widget.direction, overlayMargin),
-          constraints: BoxConstraints(maxHeight: widget.maxHeight),
+          constraints: widget.cardConstraints,
           clipBehavior: Clip.antiAlias,
           decoration: ShapeDecoration(
             color: overlayColor,

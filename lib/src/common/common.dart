@@ -78,6 +78,42 @@ enum SmartAutoSuggestBoxDirection {
 /// The default max height the auto suggest box popup can have
 const kSmartAutoSuggestBoxPopupMaxHeight = 380.0;
 
+/// Merges a user-provided [user] [BoxConstraints] override on top of
+/// internally-computed [defaults].
+///
+/// A field on [user] is considered "unset" (and therefore falls through to
+/// the corresponding [defaults] value) when it sits at the [BoxConstraints]
+/// constructor's own default — `0.0` for minimums and
+/// [double.infinity] for maximums. Any other value is treated as an
+/// explicit override.
+///
+/// This makes the common Flutter idiom work intuitively:
+///
+/// ```dart
+/// // Only minWidth is overridden; maxWidth/min/maxHeight inherit defaults.
+/// final merged = mergeOverlayCardConstraints(
+///   user: const BoxConstraints(minWidth: 400),
+///   defaults: BoxConstraints(maxHeight: 380),
+/// );
+/// // → BoxConstraints(minWidth: 400, maxWidth: ∞, minHeight: 0, maxHeight: 380)
+/// ```
+BoxConstraints mergeOverlayCardConstraints({
+  required BoxConstraints? user,
+  required BoxConstraints defaults,
+}) {
+  if (user == null) return defaults;
+  return BoxConstraints(
+    minWidth: user.minWidth != 0.0 ? user.minWidth : defaults.minWidth,
+    maxWidth: user.maxWidth != double.infinity
+        ? user.maxWidth
+        : defaults.maxWidth,
+    minHeight: user.minHeight != 0.0 ? user.minHeight : defaults.minHeight,
+    maxHeight: user.maxHeight != double.infinity
+        ? user.maxHeight
+        : defaults.maxHeight,
+  );
+}
+
 /// Whether the current platform is a desktop platform (Windows, macOS, Linux).
 ///
 /// Used to enable keyboard-driven features such as auto-focusing the first

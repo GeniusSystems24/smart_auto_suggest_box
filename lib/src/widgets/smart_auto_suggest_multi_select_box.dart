@@ -36,6 +36,8 @@ class SmartAutoSuggestMultiSelectBox<T> extends StatefulWidget {
     this.tileHeight = kComboBoxItemHeight,
     this.maxPopupHeight = kSmartAutoSuggestBoxPopupMaxHeight,
     this.direction = SmartAutoSuggestBoxDirection.bottom,
+    this.forcedDirection,
+    this.overlayCardConstraints,
     this.waitingBuilder,
     this.keyboardType = TextInputType.text,
     this.maxLength,
@@ -118,8 +120,25 @@ class SmartAutoSuggestMultiSelectBox<T> extends StatefulWidget {
   /// Max height of the suggestion popup.
   final double maxPopupHeight;
 
-  /// Direction in which the suggestions overlay will be shown.
+  /// Preferred direction in which the suggestions overlay will be shown.
+  ///
+  /// The overlay falls back to a different direction automatically when
+  /// the preferred one cannot fit the estimated list size. To **disable**
+  /// the auto-fallback and pin the overlay to a fixed direction, use
+  /// [forcedDirection].
   final SmartAutoSuggestBoxDirection direction;
+
+  /// Forces the overlay to be displayed in the given direction, bypassing
+  /// the automatic fallback. When `null` (default), [direction] drives
+  /// the auto-resolution behavior.
+  final SmartAutoSuggestBoxDirection? forcedDirection;
+
+  /// Optional [BoxConstraints] override for the overlay card. Fields are
+  /// merged on top of the defaults (max height derived from
+  /// [maxPopupHeight] and available screen space) — values at their
+  /// constructor defaults (`0.0` / [double.infinity]) fall through. See
+  /// [SmartAutoSuggestBox.overlayCardConstraints] for details.
+  final BoxConstraints? overlayCardConstraints;
 
   /// Builder for a custom loading indicator.
   final Widget Function(BuildContext context)? waitingBuilder;
@@ -444,12 +463,14 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
         );
         final desiredPopupExtent = _estimateDesiredPopupExtent();
 
-        final resolvedDirection = _resolveDirection(
-          preferred: widget.direction,
-          extents: available.extents,
-          desiredPopupExtent: desiredPopupExtent,
-          boxSize: box.size,
-        );
+        final resolvedDirection = widget.forcedDirection != null
+            ? _normalizeDirection(widget.forcedDirection!)
+            : _resolveDirection(
+                preferred: widget.direction,
+                extents: available.extents,
+                desiredPopupExtent: desiredPopupExtent,
+                boxSize: box.size,
+              );
 
         final bool isVertical =
             resolvedDirection == SmartAutoSuggestBoxDirection.bottom ||
@@ -507,8 +528,19 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
           }
         }
 
+        final mergedConstraints = mergeOverlayCardConstraints(
+          user: widget.overlayCardConstraints,
+          defaults: BoxConstraints(maxHeight: maxHeight),
+        );
+        final layoutMaxWidth = mergedConstraints.maxWidth.isFinite
+            ? mergedConstraints.maxWidth
+            : double.infinity;
+        final layoutWidth = overlayWidth
+            .clamp(mergedConstraints.minWidth, layoutMaxWidth)
+            .toDouble();
+
         Widget child = PositionedDirectional(
-          width: overlayWidth,
+          width: layoutWidth,
           child: CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
@@ -516,14 +548,14 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
             followerAnchor: followerAnchor,
             offset: offset,
             child: SizedBox(
-              width: overlayWidth,
+              width: layoutWidth,
               child: _SmartAutoSuggestBoxOverlay<T>(
                 theme: widget.theme,
                 waitingBuilder: widget.waitingBuilder,
                 tileHeight: widget.tileHeight,
                 direction: resolvedDirection,
                 engine: _engine,
-                maxHeight: maxHeight,
+                cardConstraints: mergedConstraints,
                 node: _overlayNode,
                 itemBuilder: widget.itemBuilder,
                 onSelected: _onItemTapped,

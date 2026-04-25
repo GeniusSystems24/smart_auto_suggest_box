@@ -2,6 +2,19 @@
 
 ## 0.15.1
 
+### New
+
+* **`forcedDirection`** on `SmartAutoSuggestBox` and
+  `SmartAutoSuggestMultiSelectBox` — pins the overlay to a specific
+  direction and skips the automatic fallback. Defaults to `null`
+  (existing auto-resolution behavior).
+* **`overlayCardConstraints`** on `SmartAutoSuggestBox` and
+  `SmartAutoSuggestMultiSelectBox` — `BoxConstraints?` override applied
+  to the overlay card. Fields at the [BoxConstraints] constructor
+  defaults (`0.0` / `double.infinity`) fall through to the internal
+  defaults, so callers can override only the dimensions they care
+  about (e.g. `BoxConstraints(minWidth: 400)`).
+
 ### Fixes
 
 * **No more stuck "loading from server" state.** `SmartAutoSuggestDataSource.search`

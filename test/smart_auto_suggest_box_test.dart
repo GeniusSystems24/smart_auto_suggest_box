@@ -333,6 +333,153 @@ void main() {
     await dataSource.search(capturedContext, 'q');
   });
 
+  test('mergeOverlayCardConstraints leaves unspecified fields at defaults', () {
+    const defaults = BoxConstraints(maxHeight: 380);
+
+    expect(
+      mergeOverlayCardConstraints(user: null, defaults: defaults),
+      defaults,
+      reason: 'null user → identical defaults',
+    );
+
+    final onlyMinWidth = mergeOverlayCardConstraints(
+      user: const BoxConstraints(minWidth: 400),
+      defaults: defaults,
+    );
+    expect(onlyMinWidth.minWidth, 400);
+    expect(onlyMinWidth.maxWidth, double.infinity);
+    expect(onlyMinWidth.minHeight, 0);
+    expect(onlyMinWidth.maxHeight, 380, reason: 'maxHeight inherits default');
+
+    final onlyMaxHeight = mergeOverlayCardConstraints(
+      user: const BoxConstraints(maxHeight: 200),
+      defaults: defaults,
+    );
+    expect(onlyMaxHeight.maxHeight, 200, reason: 'user maxHeight overrides');
+
+    final allOverridden = mergeOverlayCardConstraints(
+      user: const BoxConstraints(
+        minWidth: 100,
+        maxWidth: 500,
+        minHeight: 50,
+        maxHeight: 250,
+      ),
+      defaults: defaults,
+    );
+    expect(allOverridden.minWidth, 100);
+    expect(allOverridden.maxWidth, 500);
+    expect(allOverridden.minHeight, 50);
+    expect(allOverridden.maxHeight, 250);
+  });
+
+  testWidgets(
+    'forcedDirection pins the overlay even when more space exists below',
+    (tester) async {
+      // Plenty of space below the field; without forcedDirection the
+      // overlay would render under it.
+      const media = MediaQueryData(
+        size: Size(400, 800),
+        viewPadding: EdgeInsets.only(top: 24),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            SmartAutoSuggestBoxLocalizations.delegate,
+          ],
+          supportedLocales:
+              SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
+          builder: (_, child) => MediaQuery(
+            data: media,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: Scaffold(
+            body: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                const SizedBox(height: 300),
+                SmartAutoSuggestBox<String>(
+                  dataSource: SmartAutoSuggestDataSource(
+                    itemBuilder: _itemBuilder,
+                    initialList: (_) => _items(3),
+                  ),
+                  forcedDirection: SmartAutoSuggestBoxDirection.top,
+                  decoration: const InputDecoration(
+                    labelText: 'Search',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final fieldRect = await _focusField(tester);
+
+      final overlayRect = tester.getRect(find.byType(Scrollbar));
+      expect(
+        overlayRect.bottom,
+        lessThanOrEqualTo(fieldRect.top + 1),
+        reason: 'forced top direction should put overlay above the field',
+      );
+    },
+  );
+
+  testWidgets(
+    'overlayCardConstraints widens the overlay when minWidth exceeds '
+    'the field width',
+    (tester) async {
+      const media = MediaQueryData(
+        size: Size(800, 800),
+        viewPadding: EdgeInsets.only(top: 24),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            SmartAutoSuggestBoxLocalizations.delegate,
+          ],
+          supportedLocales:
+              SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
+          builder: (_, child) => MediaQuery(
+            data: media,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 200,
+                child: SmartAutoSuggestBox<String>(
+                  dataSource: SmartAutoSuggestDataSource(
+                    itemBuilder: _itemBuilder,
+                    initialList: (_) => _items(3),
+                  ),
+                  // Only minWidth specified — maxWidth/maxHeight inherit
+                  // defaults so the existing height behavior is preserved.
+                  overlayCardConstraints: const BoxConstraints(minWidth: 500),
+                  decoration: const InputDecoration(
+                    labelText: 'Search',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _focusField(tester);
+
+      final overlayRect = tester.getRect(find.byType(Scrollbar));
+      expect(
+        overlayRect.width,
+        greaterThanOrEqualTo(500),
+        reason: 'minWidth must widen the overlay beyond the field width',
+      );
+    },
+  );
+
   testWidgets(
     'asyncOnCount triggers a server fetch when local matches drop to the '
     'configured threshold',

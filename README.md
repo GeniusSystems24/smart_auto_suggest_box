@@ -195,6 +195,33 @@ SmartAutoSuggestBox<String>(
 | `start`   | Start side (left in LTR). Falls back to `end`. |
 | `end`     | End side (right in LTR). Falls back to `start`. |
 
+#### Pinning the direction (no auto-fallback)
+
+Pass `forcedDirection` to skip the auto-resolution entirely and always
+render in a fixed direction:
+
+```dart
+SmartAutoSuggestBox<String>(
+  dataSource: ...,
+  forcedDirection: SmartAutoSuggestBoxDirection.top, // never falls back
+);
+```
+
+#### Custom overlay card size
+
+`overlayCardConstraints` lets you override individual fields of the card's
+size constraints while inheriting the rest. Any field left at its
+constructor default (`0.0` for mins / `double.infinity` for maxes) falls
+through to the internal default:
+
+```dart
+SmartAutoSuggestBox<String>(
+  dataSource: ...,
+  // Pin the card to be at least 400px wide; max width / heights inherit.
+  overlayCardConstraints: const BoxConstraints(minWidth: 400),
+);
+```
+
 ### SmartAutoSuggestView in BottomSheet
 
 ```dart
