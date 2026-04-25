@@ -426,6 +426,94 @@ void main() {
     },
   );
 
+  test('clampOverlayCardConstraintsToScreen caps both axes at viewport', () {
+    const screen = Size(400, 600);
+
+    // User asked for an oversized overlay — both axes get clamped down.
+    final clamped = clampOverlayCardConstraintsToScreen(
+      const BoxConstraints(
+        minWidth: 1000,
+        maxWidth: 1200,
+        maxHeight: 2000,
+      ),
+      screen,
+    );
+    expect(clamped.maxWidth, screen.width);
+    expect(clamped.maxHeight, screen.height);
+    // minWidth must never exceed the new maxWidth (so min ≤ max stays valid).
+    expect(clamped.minWidth, screen.width);
+
+    // Already-small constraints pass through unchanged.
+    final small = clampOverlayCardConstraintsToScreen(
+      const BoxConstraints(maxWidth: 200, maxHeight: 100),
+      screen,
+    );
+    expect(small.maxWidth, 200);
+    expect(small.maxHeight, 100);
+  });
+
+  testWidgets(
+    'overlay never exceeds screen size even when overlayCardConstraints '
+    'asks for more',
+    (tester) async {
+      const screen = Size(400, 700);
+      const media = MediaQueryData(
+        size: screen,
+        viewPadding: EdgeInsets.only(top: 24),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            SmartAutoSuggestBoxLocalizations.delegate,
+          ],
+          supportedLocales:
+              SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
+          builder: (_, child) => MediaQuery(
+            data: media,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 200,
+                child: SmartAutoSuggestBox<String>(
+                  dataSource: SmartAutoSuggestDataSource(
+                    itemBuilder: _itemBuilder,
+                    initialList: (_) => _items(3),
+                  ),
+                  // Aggressively oversized request — must be clamped.
+                  overlayCardConstraints: const BoxConstraints(
+                    minWidth: 5000,
+                    maxHeight: 5000,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Search',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _focusField(tester);
+
+      final overlayRect = tester.getRect(find.byType(Scrollbar));
+      expect(
+        overlayRect.width,
+        lessThanOrEqualTo(screen.width),
+        reason: 'overlay width must never exceed screen width',
+      );
+      expect(
+        overlayRect.height,
+        lessThanOrEqualTo(screen.height),
+        reason: 'overlay height must never exceed screen height',
+      );
+    },
+  );
+
   testWidgets(
     'overlayCardConstraints widens the overlay when minWidth exceeds '
     'the field width',

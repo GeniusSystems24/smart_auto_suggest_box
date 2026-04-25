@@ -114,6 +114,39 @@ BoxConstraints mergeOverlayCardConstraints({
   );
 }
 
+/// Caps [constraints] so that neither axis can ever ask for more space
+/// than the current viewport. Applied as the final step on top of
+/// [mergeOverlayCardConstraints] so that user-supplied minimums or
+/// maximums (e.g. `minWidth: 2000` on a tablet-in-portrait window) can't
+/// push the overlay off-screen.
+///
+/// [screenSize] should come from `MediaQuery.sizeOf(context)` captured
+/// inside the overlay builder — that rebuild path runs on window resizes
+/// (desktop) and orientation changes (mobile), so the clamp adapts
+/// automatically.
+///
+/// The clamp normalizes each side:
+///  - `maxWidth`  is capped at `screenSize.width`  (`maxHeight` likewise).
+///  - `minWidth`/`minHeight` are then clamped to the resulting maxima so
+///    the returned constraints always satisfy `min ≤ max`.
+BoxConstraints clampOverlayCardConstraintsToScreen(
+  BoxConstraints constraints,
+  Size screenSize,
+) {
+  final maxW = constraints.maxWidth
+      .clamp(0.0, screenSize.width)
+      .toDouble();
+  final maxH = constraints.maxHeight
+      .clamp(0.0, screenSize.height)
+      .toDouble();
+  return BoxConstraints(
+    minWidth: constraints.minWidth.clamp(0.0, maxW).toDouble(),
+    maxWidth: maxW,
+    minHeight: constraints.minHeight.clamp(0.0, maxH).toDouble(),
+    maxHeight: maxH,
+  );
+}
+
 /// Whether the current platform is a desktop platform (Windows, macOS, Linux).
 ///
 /// Used to enable keyboard-driven features such as auto-focusing the first

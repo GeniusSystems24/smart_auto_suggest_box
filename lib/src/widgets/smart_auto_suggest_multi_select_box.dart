@@ -532,11 +532,19 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
           user: widget.overlayCardConstraints,
           defaults: BoxConstraints(maxHeight: maxHeight),
         );
-        final layoutMaxWidth = mergedConstraints.maxWidth.isFinite
-            ? mergedConstraints.maxWidth
+        // Final safety clamp — caps both axes at the current viewport so
+        // user-supplied min/max can never push the overlay off-screen.
+        // Adapts on desktop window resizes (the overlay rebuilds when
+        // MediaQuery changes).
+        final clampedConstraints = clampOverlayCardConstraintsToScreen(
+          mergedConstraints,
+          screenSize,
+        );
+        final layoutMaxWidth = clampedConstraints.maxWidth.isFinite
+            ? clampedConstraints.maxWidth
             : double.infinity;
         final layoutWidth = overlayWidth
-            .clamp(mergedConstraints.minWidth, layoutMaxWidth)
+            .clamp(clampedConstraints.minWidth, layoutMaxWidth)
             .toDouble();
 
         Widget child = PositionedDirectional(
@@ -555,7 +563,7 @@ class _SmartAutoSuggestMultiSelectBoxState<T>
                 tileHeight: widget.tileHeight,
                 direction: resolvedDirection,
                 engine: _engine,
-                cardConstraints: mergedConstraints,
+                cardConstraints: clampedConstraints,
                 node: _overlayNode,
                 itemBuilder: widget.itemBuilder,
                 onSelected: _onItemTapped,

@@ -976,15 +976,23 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
           user: widget.overlayCardConstraints,
           defaults: BoxConstraints(maxHeight: maxHeight),
         );
+        // Final safety clamp — independent of the merge above. Caps both
+        // axes at the current viewport so user-supplied min/max can never
+        // push the overlay off-screen, and adapts on desktop window
+        // resizes (the overlay builder reruns when MediaQuery changes).
+        final clampedConstraints = clampOverlayCardConstraintsToScreen(
+          mergedConstraints,
+          screenSize,
+        );
         // Honor the user's min/max width (if provided) by widening or
         // capping the layout slot the card lives in. Without this the
         // outer SizedBox would otherwise clamp the card to overlayWidth
         // even when the user asked for more.
-        final layoutMaxWidth = mergedConstraints.maxWidth.isFinite
-            ? mergedConstraints.maxWidth
+        final layoutMaxWidth = clampedConstraints.maxWidth.isFinite
+            ? clampedConstraints.maxWidth
             : double.infinity;
         final layoutWidth = overlayWidth
-            .clamp(mergedConstraints.minWidth, layoutMaxWidth)
+            .clamp(clampedConstraints.minWidth, layoutMaxWidth)
             .toDouble();
 
         Widget child = PositionedDirectional(
@@ -1003,7 +1011,7 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
                 tileHeight: widget.tileHeight,
                 direction: resolvedDirection,
                 engine: _engine,
-                cardConstraints: mergedConstraints,
+                cardConstraints: clampedConstraints,
                 node: _overlayNode,
                 itemBuilder: widget.itemBuilder,
                 onSelected: (SmartAutoSuggestItem<T> item) {
