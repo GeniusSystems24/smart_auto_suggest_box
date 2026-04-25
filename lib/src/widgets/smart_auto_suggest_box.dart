@@ -523,15 +523,29 @@ class SmartAutoSuggestBoxState<T> extends State<SmartAutoSuggestBox<T>>
       }
       _dataSource.lastSearchQuery = currentText;
       _dataSource.isLoading.value = true;
-      final newItems = await callback(text).onError(
-        (error, stackTrace) => [],
-      );
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (!mounted) return;
-      if (newItems.isNotEmpty) {
-        _dataSource.addItems(newItems.toSet(), _engine.searchText);
+      // Wrapped in try/finally so isLoading is always reset, even if the
+      // callback throws synchronously, returns a never-completing future
+      // that errors, or the widget unmounts mid-flight (in which case the
+      // owning state still clears the flag for any external dataSource).
+      try {
+        final newItems = await callback(text).onError(
+          (error, stackTrace) => [],
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+        if (newItems.isNotEmpty) {
+          _dataSource.addItems(newItems.toSet(), _engine.searchText);
+        }
+      } finally {
+        // Always reset the loading flag — including after unmount when an
+        // externally-owned data source would otherwise stay stuck on
+        // `loading = true`. We only skip when the data source itself has
+        // been disposed (e.g. internally-owned, freed by widget.dispose),
+        // since writing to a disposed ValueNotifier would throw.
+        if (!_dataSource.isDisposed) {
+          _dataSource.isLoading.value = false;
+        }
       }
-      _dataSource.isLoading.value = false;
     };
   }
 

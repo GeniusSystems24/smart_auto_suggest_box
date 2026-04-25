@@ -129,6 +129,30 @@ SmartAutoSuggestBox<String>(   // or SmartAutoSuggestView
 );
 ```
 
+### asyncOnCount: fetch when local matches drop to a threshold
+
+By default `onSearch` is invoked only when the local filter is empty. Use
+`asyncOnCount` to start fetching earlier — the server is queried as soon as
+the locally-matching item count is **at or below** the threshold:
+
+```dart
+SmartAutoSuggestBox<String>(
+  dataSource: SmartAutoSuggestDataSource(
+    itemBuilder: (context, value) => SmartAutoSuggestItem(
+      value: value,
+      label: value,
+    ),
+    initialList: (context) => localItems,
+    onSearch: (context, current, searchText) async {
+      return await api.search(searchText);
+    },
+    // 0 (default) keeps the original "fetch only when no matches" behavior.
+    // 5 fetches whenever 5 or fewer local items match the current text.
+    asyncOnCount: 5,
+  ),
+);
+```
+
 ### searchMode.always
 
 Call `onSearch` on every keystroke (after debounce):
@@ -502,6 +526,7 @@ SmartAutoSuggestBox<String>(
 | `initialList` | `List<T> Function(BuildContext)?` | `null` | Sync initial items (raw values) |
 | `onSearch` | `Future<List<T>> Function(BuildContext, List<T>, String?)?` | `null` | Async search (returns raw values) |
 | `searchMode` | `SmartAutoSuggestSearchMode` | `onNoLocalResults` | When to trigger `onSearch` |
+| `asyncOnCount` | `int` | `0` | Threshold for `onNoLocalResults`: fetch when local matches `≤ asyncOnCount` |
 | `debounce` | `Duration` | `400ms` | Debounce before calling `onSearch` |
 
 ### State (observable)

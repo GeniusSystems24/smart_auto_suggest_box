@@ -174,16 +174,21 @@ class SmartAutoSuggestEngine<T> extends ChangeNotifier {
   }
 
   /// Schedules an async search when the widget is configured with
-  /// [SmartAutoSuggestSearchMode.onNoLocalResults] and the local filter
-  /// returned nothing.
+  /// [SmartAutoSuggestSearchMode.onNoLocalResults] and the number of
+  /// locally-matching items is at or below
+  /// [SmartAutoSuggestDataSource.asyncOnCount].
+  ///
+  /// With the default `asyncOnCount = 0` this preserves the original
+  /// behavior — server is queried only when the local filter is empty.
   void scheduleSearchOnNoResults(BuildContext context) {
     if (_dataSource.searchMode != SmartAutoSuggestSearchMode.onNoLocalResults) {
       return;
     }
 
     final text = searchText.trim();
+    final threshold = _dataSource.asyncOnCount;
     if (text.isEmpty ||
-        _dataSource.filteredItems.value.isNotEmpty ||
+        _dataSource.filteredItems.value.length > threshold ||
         _dataSource.isLoading.value) {
       return;
     }
@@ -196,7 +201,7 @@ class SmartAutoSuggestEngine<T> extends ChangeNotifier {
 
       final currentText = searchText.trim();
       if (currentText != text ||
-          _dataSource.filteredItems.value.isNotEmpty ||
+          _dataSource.filteredItems.value.length > threshold ||
           _dataSource.isLoading.value) {
         return;
       }

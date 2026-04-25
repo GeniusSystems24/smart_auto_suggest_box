@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_auto_suggest_box/smart_auto_suggest_box.dart';
@@ -276,4 +278,136 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'isLoading is reset even when a stale concurrent search completes after '
+    'a newer search has finished',
+    (tester) async {
+      final firstCompleter = Completer<List<String>>();
+      final secondCompleter = Completer<List<String>>();
+      var callCount = 0;
+
+      final dataSource = SmartAutoSuggestDataSource<String>(
+        itemBuilder: _itemBuilder,
+        onSearch: (_, _, _) {
+          callCount++;
+          return callCount == 1 ? firstCompleter.future : secondCompleter.future;
+        },
+      );
+      addTearDown(dataSource.dispose);
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      // Start two overlapping searches.
+      final first = dataSource.search(capturedContext, 'aaa');
+      final second = dataSource.search(capturedContext, 'bbb');
+
+      expect(dataSource.isLoading.value, isTrue);
+
+      // Newer search completes first.
+      secondCompleter.complete(const ['from-server']);
+      await second;
+      expect(
+        dataSource.isLoading.value,
+        isFalse,
+        reason: 'newer search should reset isLoading',
+      );
+
+      // Older completion arrives after — must NOT flip isLoading back to
+      // true and must not get stuck.
+      firstCompleter.complete(const ['stale']);
+      await first;
+      expect(
+        dataSource.isLoading.value,
+        isFalse,
+        reason: 'stale completion must not resurrect the loading flag',
+      );
+    },
+  );
+
+  testWidgets(
+    'isLoading is reset when onSearch throws',
+    (tester) async {
+      final dataSource = SmartAutoSuggestDataSource<String>(
+        itemBuilder: _itemBuilder,
+        onSearch: (_, _, _) async => throw StateError('boom'),
+      );
+      addTearDown(dataSource.dispose);
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await dataSource.search(capturedContext, 'q');
+
+      expect(dataSource.isLoading.value, isFalse);
+      expect(dataSource.errorMessage.value, contains('boom'));
+    },
+  );
+
+  testWidgets(
+    'asyncOnCount triggers a server fetch when local matches drop to the '
+    'configured threshold',
+    (tester) async {
+      var serverCallCount = 0;
+      final dataSource = SmartAutoSuggestDataSource<String>(
+        itemBuilder: _itemBuilder,
+        initialList: (_) => _items(20),
+        asyncOnCount: 5,
+        onSearch: (_, _, _) async {
+          serverCallCount++;
+          return const <String>[];
+        },
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            SmartAutoSuggestBoxLocalizations.delegate,
+          ],
+          supportedLocales:
+              SmartAutoSuggestBoxLocalizations.delegate.supportedLocales,
+          home: Scaffold(
+            body: SmartAutoSuggestBox<String>(
+              dataSource: dataSource,
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 'Item 1' matches Item 1, 10..19 → 11 results, above threshold 5,
+      // so no server fetch.
+      await tester.enterText(find.byType(TextField), 'Item 1');
+      await tester.pumpAndSettle();
+      expect(serverCallCount, 0);
+
+      // 'Item 11' matches a single item (1 ≤ 5) → triggers a fetch.
+      await tester.enterText(find.byType(TextField), 'Item 11');
+      await tester.pumpAndSettle();
+      expect(serverCallCount, 1);
+    },
+  );
 }

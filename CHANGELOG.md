@@ -1,5 +1,29 @@
 # ChangeLog
 
+## 0.15.1
+
+### Fixes
+
+* **No more stuck "loading from server" state.** `SmartAutoSuggestDataSource.search`
+  now uses an internal request token so that a stale concurrent search
+  completing after a newer one no longer leaves `isLoading` stuck at `true`.
+  The flag is also guaranteed to reset when:
+  * the data source is disposed mid-flight,
+  * `onSearch` throws synchronously, or
+  * the legacy `onNoResultsFound` callback throws or the widget unmounts
+    mid-flight.
+* **Same-query retries after a failure** — after `onSearch` errors, retrying
+  the exact same query is now possible (the dedup check skips when an error
+  is set), so transient network failures can recover without changing the text.
+
+### New
+
+* **`asyncOnCount`** on `SmartAutoSuggestDataSource` — controls the
+  locally-matching item count at or below which the server is queried in
+  `SmartAutoSuggestSearchMode.onNoLocalResults`. Defaults to `0` (preserves
+  existing behavior). Set to a higher value (e.g. `5`) to start fetching
+  earlier as users narrow their query.
+
 ## 0.15.0
 
 ### Breaking Changes
