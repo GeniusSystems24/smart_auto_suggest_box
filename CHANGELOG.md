@@ -1,5 +1,18 @@
 # ChangeLog
 
+## 0.15.3
+
+### Fixes
+
+* **Overlay can never exceed the viewport.** A final clamp step (after
+  the user/default constraint merge) caps both axes at
+  `MediaQuery.sizeOf(context)`, so an aggressive
+  `overlayCardConstraints: BoxConstraints(minWidth: 5000)` no longer
+  pushes the card off-screen. The clamp re-runs on every overlay
+  rebuild, so it adapts automatically to desktop window resizes and
+  mobile orientation changes. Exposed publicly as
+  `clampOverlayCardConstraintsToScreen` for reuse.
+
 ## 0.15.2
 
 ### New
@@ -14,17 +27,6 @@
   defaults (`0.0` / `double.infinity`) fall through to the internal
   defaults, so callers can override only the dimensions they care
   about (e.g. `BoxConstraints(minWidth: 400)`).
-
-### Fixes
-
-* **Overlay can never exceed the viewport.** A final clamp step (after
-  the user/default constraint merge) caps both axes at
-  `MediaQuery.sizeOf(context)`, so an aggressive
-  `overlayCardConstraints: BoxConstraints(minWidth: 5000)` no longer
-  pushes the card off-screen. The clamp re-runs on every overlay
-  rebuild, so it adapts automatically to desktop window resizes and
-  mobile orientation changes. Exposed publicly as
-  `clampOverlayCardConstraintsToScreen` for reuse.
 
 ## 0.15.1
 
